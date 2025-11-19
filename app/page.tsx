@@ -69,7 +69,8 @@ export default function HomePage() {
   const usingPlaceholderSettings = useMemo(() => {
     const defaults = defaultSettings();
     const keys: Array<keyof Settings> = ['businessName', 'businessAddress', 'email', 'phone', 'bankDetails'];
-    return keys.every((key) => (settings[key] || '').trim() === (defaults[key] || '').trim());
+    const normalize = (value: Settings[typeof keys[number]]) => (typeof value === 'string' ? value.trim() : String(value));
+    return keys.every((key) => normalize(settings[key]) === normalize(defaults[key]));
   }, [settings]);
 
   const ready = settingsReady && invoiceReady;
