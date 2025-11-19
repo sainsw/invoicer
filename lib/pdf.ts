@@ -9,7 +9,7 @@ const drawMultiline = (pdf: jsPDF, text: string, x: number, y: number, maxWidth:
     return y;
   }
   const lines = pdf.splitTextToSize(text, maxWidth);
-  lines.forEach((line) => {
+  lines.forEach((line: string) => {
     pdf.text(line, x, y);
     y += lineHeight;
   });
