@@ -29,6 +29,7 @@ const buttonGhost = `${buttonBase} border-transparent text-slate-500 hover:text-
 
 export default function HomePage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [showSettingsReminder, setShowSettingsReminder] = useState(false);
 
   const {
     value: settings,
@@ -65,6 +66,12 @@ export default function HomePage() {
     return { subtotal, tax, total };
   }, [computedBlocks, invoice.taxRate]);
 
+  const usingPlaceholderSettings = useMemo(() => {
+    const defaults = defaultSettings();
+    const keys: Array<keyof Settings> = ['businessName', 'businessAddress', 'email', 'phone', 'bankDetails'];
+    return keys.every((key) => (settings[key] || '').trim() === (defaults[key] || '').trim());
+  }, [settings]);
+
   const ready = settingsReady && invoiceReady;
 
   useEffect(() => {
@@ -86,6 +93,12 @@ export default function HomePage() {
       currencySymbol: symbol || base.currencySymbol,
     };
   };
+
+  useEffect(() => {
+    if (!usingPlaceholderSettings) {
+      setShowSettingsReminder(false);
+    }
+  }, [usingPlaceholderSettings]);
 
   const updateInvoice = (patch: Partial<InvoiceData>) => {
     setInvoice((prev) => ({ ...prev, ...patch }));
@@ -144,6 +157,11 @@ export default function HomePage() {
   };
 
   const handleGenerate = () => {
+    if (usingPlaceholderSettings) {
+      setShowSettingsReminder(true);
+      setSettingsOpen(true);
+      return;
+    }
     generateInvoicePdf({ settings, invoice, lineItems: computedBlocks, totals });
   };
 
@@ -258,6 +276,9 @@ export default function HomePage() {
         onReset={resetSettingsToDefaults}
         onClearAll={clearAllData}
         buttonClasses={{ primary: buttonPrimary, secondary: buttonSecondary, ghost: buttonGhost }}
+        reminderMessage={
+          showSettingsReminder ? 'Add your business details before generating your first invoice.' : undefined
+        }
       />
     </main>
   );

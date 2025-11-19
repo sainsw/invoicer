@@ -14,6 +14,7 @@ interface SettingsDrawerProps {
     secondary: string;
     ghost: string;
   };
+  reminderMessage?: string;
 }
 
 export const SettingsDrawer = ({
@@ -24,6 +25,7 @@ export const SettingsDrawer = ({
   onReset,
   onClearAll,
   buttonClasses,
+  reminderMessage,
 }: SettingsDrawerProps) => {
   if (!open) {
     return null;
@@ -81,11 +83,11 @@ export const SettingsDrawer = ({
       role="dialog"
       aria-modal="true"
       onClick={onClose}
-    >
-      <div
-        className="h-full w-full max-w-md overflow-y-auto bg-white px-6 py-8 shadow-2xl sm:px-8"
-        onClick={(event) => event.stopPropagation()}
       >
+        <div
+          className="h-full w-full max-w-md overflow-y-auto bg-white px-6 py-8 shadow-2xl sm:px-8"
+          onClick={(event) => event.stopPropagation()}
+        >
         <div className="flex items-center justify-between gap-4">
           <div>
             <h2 className="text-2xl font-semibold text-slate-900">Settings</h2>
@@ -95,6 +97,12 @@ export const SettingsDrawer = ({
             Close
           </button>
         </div>
+
+        {reminderMessage && (
+          <div className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+            {reminderMessage}
+          </div>
+        )}
 
         <div className="mt-6 flex flex-col gap-5">
           {field('Business / Trading Name', 'businessName')}
