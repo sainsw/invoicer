@@ -14,3 +14,16 @@ body {
 ::selection {
   @apply bg-brand text-white;
 }
+
+input[type='date'],
+input[type='month'] {
+  min-width: 0;
+}
+
+@supports (-webkit-touch-callout: none) {
+  input[type='date'],
+  input[type='month'] {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+}
