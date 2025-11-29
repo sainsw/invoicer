@@ -18,6 +18,24 @@ const drawMultiline = (pdf: jsPDF, text: string, x: number, y: number, maxWidth:
 
 const formatCurrency = (symbol: string, value: number) => `${symbol}${value.toFixed(2)}`;
 
+const parseHexColor = (value: string) => {
+  const match = /^#?([a-fA-F0-9]{6})$/.exec((value || '').trim());
+  if (!match) {
+    return { r: 245, g: 247, b: 251 };
+  }
+  const int = parseInt(match[1], 16);
+  return {
+    r: (int >> 16) & 255,
+    g: (int >> 8) & 255,
+    b: int & 255,
+  };
+};
+
+const isDarkColor = (r: number, g: number, b: number) => {
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance < 0.6;
+};
+
 type PdfInput = {
   settings: Settings;
   invoice: InvoiceData;
@@ -29,8 +47,38 @@ export const generateInvoicePdf = ({ settings, invoice, lineItems, totals }: Pdf
   const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
   const pageWidth = pdf.internal.pageSize.getWidth();
   const margin = 48;
-  let cursorY = margin;
+  const headerColor = parseHexColor(settings.headerColor);
+  const billToText = [invoice.clientName, invoice.clientAddress].filter(Boolean).join('\n');
+  const contact = [settings.email, settings.phone].filter(Boolean).join('  ·  ');
 
+  const measureMultiline = (text: string, maxWidth: number) =>
+    text ? pdf.splitTextToSize(text, maxWidth).length * lineHeight : 0;
+
+  // Pre-compute header height (everything through Bill To)
+  let headerCursor = margin;
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(11);
+  headerCursor += lineHeight; // after business name
+  headerCursor += measureMultiline(settings.businessAddress, 200);
+  if (contact) {
+    headerCursor += lineHeight;
+  }
+  headerCursor += lineHeight; // spacing before Bill To heading
+  headerCursor += lineHeight; // Bill To heading line
+  headerCursor += measureMultiline(billToText, pageWidth - margin * 2);
+  headerCursor += lineHeight / 2; // padding after Bill To block
+
+  const headerTop = Math.max(0, margin - lineHeight);
+  const headerHeight = headerCursor - headerTop;
+
+  pdf.setFillColor(headerColor.r, headerColor.g, headerColor.b);
+  pdf.rect(0, headerTop, pageWidth, headerHeight, 'F');
+
+  const headerTextIsDark = isDarkColor(headerColor.r, headerColor.g, headerColor.b);
+  const headerTextColor = headerTextIsDark ? 255 : 0;
+  pdf.setTextColor(headerTextColor, headerTextColor, headerTextColor);
+
+  let cursorY = margin;
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(20);
   pdf.text(settings.businessName || 'Invoice', margin, cursorY);
@@ -40,7 +88,6 @@ export const generateInvoicePdf = ({ settings, invoice, lineItems, totals }: Pdf
   cursorY += lineHeight;
   cursorY = drawMultiline(pdf, settings.businessAddress, margin, cursorY, 200);
 
-  const contact = [settings.email, settings.phone].filter(Boolean).join('  ·  ');
   if (contact) {
     pdf.text(contact, margin, cursorY);
     cursorY += lineHeight;
@@ -70,8 +117,11 @@ export const generateInvoicePdf = ({ settings, invoice, lineItems, totals }: Pdf
   pdf.text('Bill To', margin, cursorY);
   pdf.setFont('helvetica', 'normal');
   cursorY += lineHeight;
-  cursorY = drawMultiline(pdf, [invoice.clientName, invoice.clientAddress].filter(Boolean).join('\n'), margin, cursorY, pageWidth - margin * 2);
+  cursorY = drawMultiline(pdf, billToText, margin, cursorY, pageWidth - margin * 2);
   cursorY += lineHeight / 2;
+
+  // Reset text color for the main body
+  pdf.setTextColor(0, 0, 0);
 
   // Table header
   const tableX = margin;

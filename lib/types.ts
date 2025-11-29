@@ -8,6 +8,7 @@ export type Settings = {
   currencySymbol: string;
   defaultPaymentTerms: number;
   bankDetails: string;
+  headerColor: string;
   defaultNotes: string;
 };
 

@@ -50,6 +50,7 @@ export const SettingsDrawer = ({
 
   const field = (label: string, id: keyof Settings, multiline = false, placeholder?: string) => {
     const isNumberField = id === 'defaultDailyRate' || id === 'defaultPaymentTerms';
+    const isColorField = id === 'headerColor';
     return (
       <div className="space-y-1.5">
         <label htmlFor={id} className="text-sm font-semibold text-slate-700">
@@ -66,7 +67,7 @@ export const SettingsDrawer = ({
         ) : (
           <input
             id={id}
-            type={isNumberField ? 'number' : 'text'}
+            type={isColorField ? 'color' : isNumberField ? 'number' : 'text'}
             className={fieldClass}
             value={typeof settings[id] === 'number' ? String(settings[id]) : (settings[id] as string)}
             onChange={handleInput(id)}
@@ -114,6 +115,7 @@ export const SettingsDrawer = ({
           {field('Currency Symbol', 'currencySymbol')}
           {field('Default Payment Terms (days)', 'defaultPaymentTerms')}
           {field('Bank / Payment Details', 'bankDetails', true)}
+          {field('Header Background Color', 'headerColor')}
           {field('Default Notes Template', 'defaultNotes', true)}
         </div>
 
