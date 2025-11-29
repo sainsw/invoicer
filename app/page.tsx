@@ -86,6 +86,15 @@ export default function HomePage() {
     setSettings((prev) => ({ ...prev, currencySymbol: symbol }));
   }, [hasStoredSettings, setSettings, settings.currencySymbol, settingsReady]);
 
+  useEffect(() => {
+    if (!settingsReady) {
+      return;
+    }
+    if (!settings.headerColor) {
+      setSettings((prev) => ({ ...prev, headerColor: defaultSettings().headerColor }));
+    }
+  }, [setSettings, settings.headerColor, settingsReady]);
+
   const localeDefaultSettings = () => {
     const base = defaultSettings();
     const symbol = detectCurrencySymbol();

@@ -68,7 +68,7 @@ export const generateInvoicePdf = ({ settings, invoice, lineItems, totals }: Pdf
   headerCursor += measureMultiline(billToText, pageWidth - margin * 2);
   headerCursor += lineHeight / 2; // padding after Bill To block
 
-  const headerTop = Math.max(0, margin - lineHeight);
+  const headerTop = 0;
   const headerHeight = headerCursor - headerTop;
 
   pdf.setFillColor(headerColor.r, headerColor.g, headerColor.b);
@@ -119,6 +119,7 @@ export const generateInvoicePdf = ({ settings, invoice, lineItems, totals }: Pdf
   cursorY += lineHeight;
   cursorY = drawMultiline(pdf, billToText, margin, cursorY, pageWidth - margin * 2);
   cursorY += lineHeight / 2;
+  cursorY += lineHeight; // gap between header block and table
 
   // Reset text color for the main body
   pdf.setTextColor(0, 0, 0);

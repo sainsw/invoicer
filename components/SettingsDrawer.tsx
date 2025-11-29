@@ -1,5 +1,6 @@
 'use client';
 
+import { defaultSettings } from '@/lib/defaults';
 import { Settings } from '@/lib/types';
 
 interface SettingsDrawerProps {
@@ -69,7 +70,13 @@ export const SettingsDrawer = ({
             id={id}
             type={isColorField ? 'color' : isNumberField ? 'number' : 'text'}
             className={fieldClass}
-            value={typeof settings[id] === 'number' ? String(settings[id]) : (settings[id] as string)}
+            value={
+              typeof settings[id] === 'number'
+                ? String(settings[id])
+                : id === 'headerColor'
+                  ? settings.headerColor || defaultSettings().headerColor
+                  : (settings[id] as string)
+            }
             onChange={handleInput(id)}
             placeholder={placeholder}
           />
