@@ -16,7 +16,11 @@ export const defaultSettings = (): Settings => ({
   defaultDailyRate: 150,
   currencySymbol: FALLBACK_CURRENCY.symbol,
   defaultPaymentTerms: 14,
-  bankDetails: 'Bank Name: \nAccount Number\; \nSort Code: ',
+  bankDetails: `Bank Name:
+Bank Address:
+Sort Code:
+Account Number:
+Account Holder Name (as shown on cheques):`,
   defaultNotes: 'Thank you for your business! Payment is appreciated within the agreed terms.',
 });
 
@@ -37,10 +41,12 @@ export const defaultInvoice = (settings: Settings): InvoiceData => {
   return {
     invoiceMonth: key,
     invoiceNumber: '',
+    purchaseOrder: '',
     issueDate: today,
     dueDate: addDays(today, settings.defaultPaymentTerms),
     clientName: settings.defaultClientName || '',
     clientAddress: '',
+    remittanceEmail: settings.email || '',
     notes: settings.defaultNotes,
     taxRate: 0,
     workBlocks: [emptyWorkBlock(settings.defaultDailyRate, key)],

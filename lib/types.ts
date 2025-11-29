@@ -28,10 +28,12 @@ export type ComputedWorkBlock = WorkBlock & {
 export type InvoiceData = {
   invoiceMonth: string;
   invoiceNumber: string;
+  purchaseOrder: string;
   issueDate: string;
   dueDate: string;
   clientName: string;
   clientAddress: string;
+  remittanceEmail: string;
   notes: string;
   taxRate: number;
   workBlocks: WorkBlock[];

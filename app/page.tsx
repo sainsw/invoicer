@@ -326,7 +326,7 @@ function MetadataForm({
         </div>
         <div className="space-y-1.5">
           <label htmlFor="issueDate" className="text-sm font-semibold text-slate-700">
-            Issue date
+            Invoice date
           </label>
           <input
             type="date"
@@ -348,6 +348,34 @@ function MetadataForm({
             className={fieldClass}
             value={invoice.dueDate}
             onChange={(event) => onChange({ dueDate: event.target.value })}
+          />
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-1.5">
+          <label htmlFor="purchaseOrder" className="text-sm font-semibold text-slate-700">
+            Purchase order / contact
+          </label>
+          <input
+            id="purchaseOrder"
+            className={fieldClass}
+            value={invoice.purchaseOrder || ''}
+            onChange={(event) => onChange({ purchaseOrder: event.target.value })}
+            placeholder="PO-123 or Jane Doe"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label htmlFor="remittanceEmail" className="text-sm font-semibold text-slate-700">
+            Remittance email
+          </label>
+          <input
+            type="email"
+            id="remittanceEmail"
+            className={fieldClass}
+            value={invoice.remittanceEmail || ''}
+            onChange={(event) => onChange({ remittanceEmail: event.target.value })}
+            placeholder="accounts@yourcompany.com"
           />
         </div>
       </div>

@@ -53,9 +53,11 @@ export const generateInvoicePdf = ({ settings, invoice, lineItems, totals }: Pdf
   pdf.text('Invoice Details', metaX, metaY);
   pdf.setFont('helvetica', 'normal');
   const metaLines = [
-    [`Invoice #:`, invoice.invoiceNumber || '—'],
-    ['Issue date:', formatHumanDate(invoice.issueDate)],
+    ['Invoice #:', invoice.invoiceNumber || '—'],
+    ['PO / Contact:', invoice.purchaseOrder || '—'],
+    ['Invoice date:', formatHumanDate(invoice.issueDate)],
     ['Due date:', formatHumanDate(invoice.dueDate)],
+    ['Remittance email:', invoice.remittanceEmail || settings.email || '—'],
   ];
   let metaCursor = metaY + lineHeight;
   metaLines.forEach(([label, value]) => {
