@@ -295,7 +295,7 @@ function MetadataForm({
   onChange: (patch: Partial<InvoiceData>) => void;
 }) {
   const fieldClass =
-    'w-full rounded-2xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30';
+    'w-full min-w-0 rounded-2xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30';
 
   return (
     <div className="space-y-6">
