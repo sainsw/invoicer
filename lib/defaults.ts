@@ -1,5 +1,5 @@
 import { FALLBACK_CURRENCY } from './currency';
-import { addDays, formatISODate, monthKey, parseMonthKey } from './date';
+import { formatISODate, monthKey, parseMonthKey } from './date';
 import { InvoiceData, Settings, WorkBlock } from './types';
 
 export const SETTINGS_KEY = 'simpleInvoice.settings';
@@ -43,7 +43,6 @@ export const defaultInvoice = (settings: Settings): InvoiceData => {
     invoiceNumber: '',
     purchaseOrder: '',
     issueDate: today,
-    dueDate: addDays(today, settings.defaultPaymentTerms),
     clientName: settings.defaultClientName || '',
     clientAddress: '',
     remittanceEmail: settings.email || '',

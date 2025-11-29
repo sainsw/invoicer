@@ -12,7 +12,7 @@ import {
   INVOICE_KEY,
   SETTINGS_KEY,
 } from '@/lib/defaults';
-import { addDays, countWeekdaysInclusive, isValidDateRange } from '@/lib/date';
+import { countWeekdaysInclusive, isValidDateRange } from '@/lib/date';
 import { detectCurrencySymbol } from '@/lib/currency';
 import { generateInvoicePdf } from '@/lib/pdf';
 import { ComputedWorkBlock, InvoiceData, Settings, WorkBlock } from '@/lib/types';
@@ -333,21 +333,7 @@ function MetadataForm({
             id="issueDate"
             className={fieldClass}
             value={invoice.issueDate}
-            onChange={(event) =>
-              onChange({ issueDate: event.target.value, dueDate: addDays(event.target.value, settings.defaultPaymentTerms) })
-            }
-          />
-        </div>
-        <div className="space-y-1.5">
-          <label htmlFor="dueDate" className="text-sm font-semibold text-slate-700">
-            Due date
-          </label>
-          <input
-            type="date"
-            id="dueDate"
-            className={fieldClass}
-            value={invoice.dueDate}
-            onChange={(event) => onChange({ dueDate: event.target.value })}
+            onChange={(event) => onChange({ issueDate: event.target.value })}
           />
         </div>
       </div>

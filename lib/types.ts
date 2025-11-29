@@ -30,7 +30,6 @@ export type InvoiceData = {
   invoiceNumber: string;
   purchaseOrder: string;
   issueDate: string;
-  dueDate: string;
   clientName: string;
   clientAddress: string;
   remittanceEmail: string;
