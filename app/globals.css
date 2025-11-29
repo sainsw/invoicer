@@ -26,4 +26,11 @@ input[type='month'] {
     -webkit-appearance: none;
     appearance: none;
   }
+
+  /* Prevent iOS from auto-zooming form fields by keeping font size at 16px */
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
 }
