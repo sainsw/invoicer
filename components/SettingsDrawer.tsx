@@ -48,6 +48,8 @@ export const SettingsDrawer = ({
 
   const fieldClass =
     'w-full rounded-2xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30';
+  const colorFieldClass =
+    'color-input h-11 w-full cursor-pointer overflow-hidden rounded-2xl border border-slate-200 bg-transparent p-1 shadow-sm transition focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30';
 
   const field = (label: string, id: keyof Settings, multiline = false, placeholder?: string) => {
     const isNumberField = id === 'defaultDailyRate' || id === 'defaultPaymentTerms';
@@ -65,17 +67,23 @@ export const SettingsDrawer = ({
             onChange={handleInput(id)}
             placeholder={placeholder}
           />
+        ) : isColorField ? (
+          <input
+            id={id}
+            type="color"
+            className={colorFieldClass}
+            value={settings.headerColor || defaultSettings().headerColor}
+            onChange={handleInput(id)}
+          />
         ) : (
           <input
             id={id}
-            type={isColorField ? 'color' : isNumberField ? 'number' : 'text'}
+            type={isNumberField ? 'number' : 'text'}
             className={fieldClass}
             value={
               typeof settings[id] === 'number'
                 ? String(settings[id])
-                : id === 'headerColor'
-                  ? settings.headerColor || defaultSettings().headerColor
-                  : (settings[id] as string)
+                : (settings[id] as string)
             }
             onChange={handleInput(id)}
             placeholder={placeholder}
@@ -127,6 +135,9 @@ export const SettingsDrawer = ({
         </div>
 
         <div className="mt-8 flex flex-wrap gap-3">
+          <button className={buttonClasses.primary} onClick={onClose}>
+            Done
+          </button>
           <button className={buttonClasses.secondary} onClick={onReset}>
             Reset to defaults
           </button>
