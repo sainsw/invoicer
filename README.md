@@ -2,6 +2,8 @@
 
 Generate professional PDF invoices straight from your browser. The app keeps settings in localStorage, calculates weekday-only work blocks, and exports a clean PDF layout without needing a backend.
 
+- Live demo: https://invoicer.ainsworth.dev
+
 ## Getting started
 
 ```bash
