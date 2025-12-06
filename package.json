@@ -6,9 +6,11 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "prebuild": "npm run fetch-avatar",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "fetch-avatar": "node ./scripts/fetch-avatar.js"
   },
   "keywords": [],
   "author": "",
