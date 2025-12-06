@@ -20,6 +20,11 @@ export const metadata: Metadata = {
   description: siteDescription,
   keywords: ['invoice generator', 'PDF invoices', 'freelance invoicing', 'browser invoice builder'],
   applicationName: siteName,
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
   alternates: { canonical: siteUrl },
   robots: {
     index: true,
