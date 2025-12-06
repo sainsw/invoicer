@@ -154,7 +154,7 @@ export const generateInvoicePdf = ({ settings, invoice, lineItems, totals }: Pdf
   lineItems.forEach((item) => {
     const rowY = cursorY;
     const lines = pdf.splitTextToSize(item.description || 'Work', columns[0].width - 8);
-    let rowHeight = Math.max(lineHeight, lines.length * lineHeight);
+    const rowHeight = Math.max(lineHeight, lines.length * lineHeight);
     pdf.text(lines, columnX[0] + 4, cursorY + lineHeight - 5);
 
     pdf.text(formatHumanDate(item.startDate), columnX[1] + 4, cursorY + lineHeight - 5);

@@ -20,12 +20,15 @@ import { ComputedWorkBlock, InvoiceData, Settings, WorkBlock } from '@/lib/types
 const disablePdf = (blocks: ComputedWorkBlock[]) =>
   blocks.length === 0 || blocks.some((block) => block.hasError || block.days === 0);
 
-const cardClass = 'w-full rounded-3xl bg-white p-6 sm:p-8 shadow-soft ring-1 ring-slate-100';
+const cardClass =
+  'w-full rounded-3xl border border-slate-200/80 bg-white p-6 shadow-lg shadow-slate-900/5 transition-colors sm:p-8 dark:border-slate-800 dark:bg-slate-950 dark:shadow-none';
 const buttonBase =
-  'inline-flex items-center justify-center rounded-full border px-4 py-2.5 text-sm font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-60 disabled:cursor-not-allowed';
-const buttonPrimary = `${buttonBase} border-transparent bg-brand text-white hover:bg-indigo-600`;
-const buttonSecondary = `${buttonBase} border-transparent bg-neutral-900/5 text-slate-700 hover:bg-neutral-900/10`;
-const buttonGhost = `${buttonBase} border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-100`;
+  'inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 disabled:cursor-not-allowed disabled:opacity-60';
+const buttonPrimary = `${buttonBase} bg-slate-900 text-white shadow-lg shadow-slate-900/10 ring-1 ring-slate-900 hover:-translate-y-0.5 hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:ring-white/70 dark:shadow-white/10 dark:hover:-translate-y-0.5 dark:hover:bg-slate-100`;
+const buttonSecondary = `${buttonBase} bg-white text-slate-900 ring-1 ring-slate-300 shadow-sm hover:-translate-y-0.5 hover:ring-slate-400 dark:bg-slate-900 dark:text-white dark:ring-slate-700`;
+const buttonGhost = `${buttonBase} bg-transparent text-slate-700 ring-1 ring-transparent hover:-translate-y-0.5 hover:ring-slate-200 dark:text-slate-200 dark:hover:ring-slate-700`;
+const iconButton =
+  'inline-flex h-11 w-11 items-center justify-center rounded-xl ring-1 ring-slate-200 text-base font-semibold text-slate-700 shadow-sm transition duration-150 hover:-translate-y-0.5 hover:bg-slate-100 hover:ring-slate-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 dark:ring-slate-700 dark:text-slate-100 dark:hover:bg-slate-800 dark:hover:ring-slate-600';
 
 export default function HomePage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -104,12 +107,6 @@ export default function HomePage() {
     };
   };
 
-  useEffect(() => {
-    if (!usingPlaceholderSettings) {
-      setShowSettingsReminder(false);
-    }
-  }, [usingPlaceholderSettings]);
-
   const updateInvoice = (patch: Partial<InvoiceData>) => {
     setInvoice((prev) => ({ ...prev, ...patch }));
   };
@@ -166,7 +163,17 @@ export default function HomePage() {
     setSettingsOpen(false);
   };
 
+  const confirmAndClearAll = () => {
+    const message =
+      'Reset stored data? This will clear all saved settings and invoice details from this device.';
+    if (typeof window !== 'undefined' && !window.confirm(message)) {
+      return;
+    }
+    clearAllData();
+  };
+
   const handleGenerate = () => {
+    setShowSettingsReminder(false);
     if (usingPlaceholderSettings) {
       setShowSettingsReminder(true);
       setSettingsOpen(true);
@@ -178,45 +185,40 @@ export default function HomePage() {
   const disableGenerate = !ready || disablePdf(computedBlocks);
 
   return (
-    <main className="min-h-screen bg-slate-50 py-10 sm:py-12">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 sm:px-6 lg:px-0">
+    <main className="min-h-screen pb-12 pt-10 sm:pt-14">
+      <div className="mx-auto flex w-full max-w-[1570px] flex-col gap-6 px-4 sm:px-6 lg:px-8">
         <section className={`${cardClass} space-y-6`}>
-          <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-            <div className="flex-1 space-y-3">
-              <h1 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
-                Simple Invoice Generator
+          <div className="flex flex-col gap-6">
+            <div className="flex-1 space-y-4">
+              <span className="inline-flex items-center gap-2 self-start rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 ring-1 ring-slate-200 dark:bg-slate-900 dark:text-slate-200 dark:ring-slate-800">
+                Private · Browser-based · PDF ready
+              </span>
+              <h1 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-5xl">
+                Invoicer 🧾
               </h1>
-              <p className="max-w-2xl text-base text-slate-600">
-                Capture work blocks, keep totals accurate, and export a polished PDF without leaving your
-                browser.
+              <p className="max-w-2xl text-base text-slate-600 dark:text-slate-300 sm:text-lg">
+                A clean, lightweight builder for freelancers: log your work, keep totals accurate, and download a
+                ready-to-send PDF in seconds.
               </p>
             </div>
-            <div className="flex flex-wrap gap-3">
-              <button className={`${buttonSecondary} gap-2`} onClick={() => setSettingsOpen(true)}>
-                ⚙️ Settings
-              </button>
-              <button className={buttonGhost} onClick={clearAllData}>
-                Reset data
-              </button>
-            </div>
           </div>
-          <p className="text-sm text-slate-500">
-            {ready ? 'Settings stored locally. Changes save automatically.' : 'Loading saved preferences…'}
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            {ready ? 'Settings stored locally on your device. Changes save automatically.' : 'Loading saved preferences…'}
           </p>
         </section>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           <section className={`${cardClass} space-y-8`}>
-            <MetadataForm invoice={invoice} settings={settings} onChange={updateInvoice} />
+            <MetadataForm invoice={invoice} onChange={updateInvoice} />
 
             <div className="space-y-3">
               <div className="flex items-center justify-between gap-4">
-                <h3 className="text-lg font-semibold text-slate-900">Work blocks</h3>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Work blocks</h3>
                 <button type="button" className={buttonSecondary} onClick={addWorkBlock}>
                   + Add block
                 </button>
               </div>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 Only Monday–Friday days count towards totals. Weekends are skipped automatically.
               </p>
             </div>
@@ -238,30 +240,50 @@ export default function HomePage() {
             )}
 
             <div className="space-y-2">
-              <label htmlFor="notes" className="text-sm font-semibold text-slate-700">
+              <label htmlFor="notes" className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                 Notes
               </label>
-              <textarea
-                id="notes"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 shadow-sm transition hover:border-slate-300 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
-                value={invoice.notes}
-                onChange={(event) => updateInvoice({ notes: event.target.value })}
-                placeholder="Purchase orders, payment expectations, or a short thank-you message."
-                rows={4}
-              />
-              <div>
+              <div className="relative">
+                <textarea
+                  id="notes"
+                  className="w-full min-h-[120px] rounded-3xl border border-slate-200/80 bg-white/70 px-4 py-3 text-sm text-slate-900 shadow-sm shadow-slate-900/5 transition hover:border-slate-300 focus:border-brand-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:shadow-black/20 dark:hover:border-slate-700 dark:focus:bg-slate-900"
+                  value={invoice.notes}
+                  onChange={(event) => updateInvoice({ notes: event.target.value })}
+                  placeholder="Purchase orders, payment expectations, or a short thank-you message."
+                  rows={4}
+                />
                 <button
                   type="button"
-                  className={buttonGhost}
+                  className={`${iconButton} absolute bottom-3 right-3 h-10 w-10 rounded-full`}
                   onClick={() => updateInvoice({ notes: settings.defaultNotes })}
+                  aria-label="Apply notes template"
                 >
-                  Use notes template
+                  🔄
                 </button>
               </div>
             </div>
           </section>
 
           <aside className={`${cardClass} flex flex-col gap-6`}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">Quick actions</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Adjust settings or clear local data.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button className={iconButton} onClick={() => setSettingsOpen(true)} aria-label="Open settings">
+                  ⚙️
+                </button>
+                <button
+                  className={`${iconButton} text-rose-600 hover:ring-rose-200 dark:text-rose-200 dark:hover:ring-rose-400/60`}
+                  onClick={confirmAndClearAll}
+                  aria-label="Reset stored data"
+                >
+                  🔄
+                </button>
+              </div>
+            </div>
+
             <TotalsPanel
               totals={totals}
               taxRate={invoice.taxRate}
@@ -272,7 +294,7 @@ export default function HomePage() {
               Generate PDF
             </button>
             {!ready && (
-              <p className="text-sm text-slate-500">Please wait for your saved details to finish loading.</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Please wait for your saved details to finish loading.</p>
             )}
           </aside>
         </div>
@@ -284,10 +306,12 @@ export default function HomePage() {
         onClose={() => setSettingsOpen(false)}
         onChange={handleSettingsChange}
         onReset={resetSettingsToDefaults}
-        onClearAll={clearAllData}
+        onClearAll={confirmAndClearAll}
         buttonClasses={{ primary: buttonPrimary, secondary: buttonSecondary, ghost: buttonGhost }}
         reminderMessage={
-          showSettingsReminder ? 'Add your business details before generating your first invoice.' : undefined
+          showSettingsReminder && usingPlaceholderSettings
+            ? 'Add your business details before generating your first invoice.'
+            : undefined
         }
       />
     </main>
@@ -296,21 +320,19 @@ export default function HomePage() {
 
 function MetadataForm({
   invoice,
-  settings,
   onChange,
 }: {
   invoice: InvoiceData;
-  settings: Settings;
   onChange: (patch: Partial<InvoiceData>) => void;
 }) {
   const fieldClass =
-    'w-full min-w-0 rounded-2xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30';
+    'w-full min-w-0 rounded-2xl border border-slate-200/80 bg-white/70 px-4 py-3 text-sm text-slate-900 shadow-sm shadow-slate-900/5 transition hover:border-slate-300 focus:border-brand-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-200 placeholder:text-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:shadow-black/20 dark:hover:border-slate-700 dark:focus:bg-slate-900';
 
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-1.5">
-          <label htmlFor="invoiceMonth" className="text-sm font-semibold text-slate-700">
+          <label htmlFor="invoiceMonth" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
             Invoice month
           </label>
           <input
@@ -322,7 +344,7 @@ function MetadataForm({
           />
         </div>
         <div className="space-y-1.5">
-          <label htmlFor="invoiceNumber" className="text-sm font-semibold text-slate-700">
+          <label htmlFor="invoiceNumber" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
             Invoice number
           </label>
           <input
@@ -334,7 +356,7 @@ function MetadataForm({
           />
         </div>
         <div className="space-y-1.5">
-          <label htmlFor="issueDate" className="text-sm font-semibold text-slate-700">
+          <label htmlFor="issueDate" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
             Invoice date
           </label>
           <input
@@ -349,7 +371,7 @@ function MetadataForm({
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-1.5">
-          <label htmlFor="purchaseOrder" className="text-sm font-semibold text-slate-700">
+          <label htmlFor="purchaseOrder" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
             Purchase order / contact
           </label>
           <input
@@ -361,7 +383,7 @@ function MetadataForm({
           />
         </div>
         <div className="space-y-1.5">
-          <label htmlFor="remittanceEmail" className="text-sm font-semibold text-slate-700">
+          <label htmlFor="remittanceEmail" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
             Remittance email
           </label>
           <input
@@ -377,7 +399,7 @@ function MetadataForm({
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-1.5">
-          <label htmlFor="clientName" className="text-sm font-semibold text-slate-700">
+          <label htmlFor="clientName" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
             Client
           </label>
           <input
@@ -387,8 +409,8 @@ function MetadataForm({
             onChange={(event) => onChange({ clientName: event.target.value })}
           />
         </div>
-        <div className="space-y-1.5 md:col-span-2">
-          <label htmlFor="clientAddress" className="text-sm font-semibold text-slate-700">
+        <div className="space-y-1.5">
+          <label htmlFor="clientAddress" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
             Client address
           </label>
           <textarea
@@ -415,41 +437,41 @@ function TotalsPanel({
   setTaxRate: (tax: number) => void;
   currency: string;
 }) {
-  const rowClass = 'flex items-center justify-between text-base text-slate-700';
+  const rowClass = 'flex items-center justify-between text-base text-slate-700 dark:text-slate-200';
 
   return (
     <div className="space-y-5">
       <div className="space-y-2">
-        <label htmlFor="taxRate" className="text-sm font-semibold text-slate-700">
+        <label htmlFor="taxRate" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
           Tax / VAT percentage
         </label>
         <input
           type="number"
           id="taxRate"
           min={0}
-          className="w-full rounded-2xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
+          className="w-full rounded-2xl border border-slate-200/80 bg-white/70 px-3.5 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-900/5 transition hover:border-slate-300 focus:border-brand-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:shadow-black/20 dark:hover:border-slate-700 dark:focus:bg-slate-900"
           value={taxRate}
           onChange={(event) => setTaxRate(Number(event.target.value) || 0)}
         />
       </div>
-      <div className="space-y-3 rounded-2xl bg-slate-50 px-4 py-4">
+      <div className="space-y-3 rounded-2xl border border-slate-200/80 bg-slate-50 px-4 py-4 shadow-inner shadow-slate-900/5 dark:border-slate-800 dark:bg-slate-900 dark:shadow-none">
         <div className={rowClass}>
           <span>Subtotal</span>
-          <strong className="text-lg text-slate-900">
+          <strong className="text-lg text-slate-900 dark:text-white">
             {currency}
             {totals.subtotal.toFixed(2)}
           </strong>
         </div>
         <div className={rowClass}>
           <span>Tax</span>
-          <strong className="text-lg text-slate-900">
+          <strong className="text-lg text-slate-900 dark:text-white">
             {currency}
             {totals.tax.toFixed(2)}
           </strong>
         </div>
-        <div className={`${rowClass} border-t border-slate-200 pt-3 text-lg font-semibold text-slate-900`}>
+        <div className={`${rowClass} border-t border-slate-200 pt-3 text-lg font-semibold text-slate-900 dark:border-slate-700 dark:text-white`}>
           <span>Grand total</span>
-          <strong className="text-2xl text-slate-900">
+          <strong className="text-2xl text-slate-900 dark:text-white">
             {currency}
             {totals.total.toFixed(2)}
           </strong>

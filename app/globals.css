@@ -8,7 +8,19 @@
 }
 
 body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+  background: #f7f7fb;
+  @apply text-slate-900 antialiased;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: light dark;
+  }
+
+  body {
+    background: #0b1020;
+    @apply text-slate-100;
+  }
 }
 
 ::selection {
@@ -46,6 +58,6 @@ input[type='month'] {
   input,
   textarea,
   select {
-    font-size: 16px;
+    font-size: 16px !important;
   }
 }
