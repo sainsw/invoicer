@@ -478,7 +478,7 @@ function TotalsPanel({
           </strong>
         </div>
         <div className={`${rowClass} border-t border-slate-200 pt-3 text-lg font-semibold text-slate-900 dark:border-slate-700 dark:text-white`}>
-          <span>Grand total</span>
+          <span>Total</span>
           <strong className="text-2xl text-slate-900 dark:text-white">
             {currency}
             {totals.total.toFixed(2)}
