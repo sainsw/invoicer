@@ -3,7 +3,7 @@ import { ImageResponse } from 'next/og';
 export const runtime = 'edge';
 export const alt = 'Simple Invoice Generator social preview';
 
-export async function GET() {
+export default async function Image() {
   return new ImageResponse(
     (
       <div
