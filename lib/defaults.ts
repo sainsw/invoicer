@@ -21,7 +21,8 @@ Bank Address:
 Sort Code:
 Account Number:
 Account Holder Name (as shown on cheques):`,
-  headerColor: '#f5f7fb',
+  headerColor: '#ffffff',
+  bodyColor: '#ffffff',
   defaultNotes: 'Thank you for your business! Payment is appreciated within the agreed terms.',
 });
 

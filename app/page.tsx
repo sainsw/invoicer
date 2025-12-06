@@ -93,10 +93,18 @@ export default function HomePage() {
     if (!settingsReady) {
       return;
     }
+    const defaults = defaultSettings();
+    const patch: Partial<Settings> = {};
     if (!settings.headerColor) {
-      setSettings((prev) => ({ ...prev, headerColor: defaultSettings().headerColor }));
+      patch.headerColor = defaults.headerColor;
     }
-  }, [setSettings, settings.headerColor, settingsReady]);
+    if (!settings.bodyColor) {
+      patch.bodyColor = defaults.bodyColor;
+    }
+    if (Object.keys(patch).length > 0) {
+      setSettings((prev) => ({ ...prev, ...patch }));
+    }
+  }, [setSettings, settings.bodyColor, settings.headerColor, settingsReady]);
 
   const localeDefaultSettings = () => {
     const base = defaultSettings();

@@ -85,9 +85,10 @@ export const SettingsDrawer = ({
   const colorFieldClass =
     'color-input h-11 w-full cursor-pointer overflow-hidden rounded-2xl border border-slate-200/80 bg-white/70 p-1 shadow-sm shadow-slate-900/5 transition hover:border-slate-300 focus:border-brand-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-200 appearance-none dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/20 dark:hover:border-slate-700 dark:focus:bg-slate-900 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-xl [&::-webkit-color-swatch]:border-0';
 
+  const colorFields: Array<keyof Settings> = ['headerColor', 'bodyColor'];
   const field = (label: string, id: keyof Settings, multiline = false, placeholder?: string) => {
     const isNumberField = id === 'defaultDailyRate' || id === 'defaultPaymentTerms';
-    const isColorField = id === 'headerColor';
+    const isColorField = colorFields.includes(id);
     const isBankDetails = id === 'bankDetails';
     return (
       <div className="space-y-1.5">
@@ -108,7 +109,7 @@ export const SettingsDrawer = ({
             id={id}
             type="color"
             className={colorFieldClass}
-            value={settings.headerColor || defaultSettings().headerColor}
+            value={(settings[id] as string) || (defaultSettings()[id] as string)}
             onChange={handleInput(id)}
           />
         ) : (
@@ -190,6 +191,7 @@ export const SettingsDrawer = ({
           {field('Default Payment Terms (days)', 'defaultPaymentTerms')}
           {field('Bank / Payment Details', 'bankDetails', true)}
           {field('Header Background Color', 'headerColor')}
+          {field('Body Background Color (below header)', 'bodyColor')}
           {field('Default Notes Template', 'defaultNotes', true)}
         </div>
 

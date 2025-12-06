@@ -9,6 +9,7 @@ export type Settings = {
   defaultPaymentTerms: number;
   bankDetails: string;
   headerColor: string;
+  bodyColor: string;
   defaultNotes: string;
 };
 

@@ -21,7 +21,7 @@ const formatCurrency = (symbol: string, value: number) => `${symbol}${value.toFi
 const parseHexColor = (value: string) => {
   const match = /^#?([a-fA-F0-9]{6})$/.exec((value || '').trim());
   if (!match) {
-    return { r: 245, g: 247, b: 251 };
+    return { r: 255, g: 255, b: 255 };
   }
   const int = parseInt(match[1], 16);
   return {
@@ -46,8 +46,10 @@ type PdfInput = {
 export const generateInvoicePdf = ({ settings, invoice, lineItems, totals }: PdfInput) => {
   const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
   const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
   const margin = 48;
   const headerColor = parseHexColor(settings.headerColor);
+  const bodyColor = parseHexColor(settings.bodyColor);
   const billToText = [invoice.clientName, invoice.clientAddress].filter(Boolean).join('\n');
   const contact = [settings.email, settings.phone].filter(Boolean).join('  ·  ');
 
@@ -73,10 +75,14 @@ export const generateInvoicePdf = ({ settings, invoice, lineItems, totals }: Pdf
 
   pdf.setFillColor(headerColor.r, headerColor.g, headerColor.b);
   pdf.rect(0, headerTop, pageWidth, headerHeight, 'F');
+  pdf.setFillColor(bodyColor.r, bodyColor.g, bodyColor.b);
+  pdf.rect(0, headerHeight, pageWidth, pageHeight - headerHeight, 'F');
 
   const headerTextIsDark = isDarkColor(headerColor.r, headerColor.g, headerColor.b);
   const headerTextColor = headerTextIsDark ? 255 : 0;
   pdf.setTextColor(headerTextColor, headerTextColor, headerTextColor);
+  const bodyTextIsDark = isDarkColor(bodyColor.r, bodyColor.g, bodyColor.b);
+  const bodyTextColor = bodyTextIsDark ? 255 : 0;
 
   let cursorY = margin;
   pdf.setFont('helvetica', 'bold');
@@ -122,11 +128,26 @@ export const generateInvoicePdf = ({ settings, invoice, lineItems, totals }: Pdf
   cursorY += lineHeight; // gap between header block and table
 
   // Reset text color for the main body
-  pdf.setTextColor(0, 0, 0);
+  pdf.setTextColor(bodyTextColor, bodyTextColor, bodyTextColor);
+  pdf.setDrawColor(bodyTextColor, bodyTextColor, bodyTextColor);
 
   // Table header
   const tableX = margin;
   const tableWidth = pageWidth - margin * 2;
+  const adjustColor = (component: number, delta: number) => Math.max(0, Math.min(255, component + delta));
+  const tableHeaderFill = bodyTextIsDark
+    ? {
+        // Lighten slightly on dark bodies for separation
+        r: adjustColor(bodyColor.r, 20),
+        g: adjustColor(bodyColor.g, 20),
+        b: adjustColor(bodyColor.b, 20),
+      }
+    : {
+        // Darken slightly on light bodies so the header is visible even on white
+        r: adjustColor(bodyColor.r, -14),
+        g: adjustColor(bodyColor.g, -14),
+        b: adjustColor(bodyColor.b, -14),
+      };
   const columns = [
     { label: 'Description', width: 160, key: 'description' },
     { label: 'Start', width: 80, key: 'startDate' },
@@ -143,10 +164,11 @@ export const generateInvoicePdf = ({ settings, invoice, lineItems, totals }: Pdf
   });
 
   pdf.setFont('helvetica', 'bold');
-  pdf.setFillColor(240, 242, 248);
+  pdf.setFillColor(tableHeaderFill.r, tableHeaderFill.g, tableHeaderFill.b);
   pdf.rect(tableX, cursorY, tableWidth, lineHeight, 'F');
+  const headerLabelY = cursorY + lineHeight / 2;
   columns.forEach((col, index) => {
-    pdf.text(col.label, columnX[index] + 4, cursorY + lineHeight - 5);
+    pdf.text(col.label, columnX[index] + 4, headerLabelY, { baseline: 'middle' });
   });
   cursorY += lineHeight + 4;
 
@@ -155,13 +177,15 @@ export const generateInvoicePdf = ({ settings, invoice, lineItems, totals }: Pdf
     const rowY = cursorY;
     const lines = pdf.splitTextToSize(item.description || 'Work', columns[0].width - 8);
     const rowHeight = Math.max(lineHeight, lines.length * lineHeight);
-    pdf.text(lines, columnX[0] + 4, cursorY + lineHeight - 5);
+    const rowMiddle = rowY + rowHeight / 2;
+    const textBaseline = { baseline: 'middle' } as const;
+    pdf.text(lines, columnX[0] + 4, rowMiddle, textBaseline);
 
-    pdf.text(formatHumanDate(item.startDate), columnX[1] + 4, cursorY + lineHeight - 5);
-    pdf.text(formatHumanDate(item.endDate), columnX[2] + 4, cursorY + lineHeight - 5);
-    pdf.text(String(item.days), columnX[3] + 4, cursorY + lineHeight - 5);
-    pdf.text(formatCurrency(settings.currencySymbol, item.dailyRate), columnX[4] + 4, cursorY + lineHeight - 5);
-    pdf.text(formatCurrency(settings.currencySymbol, item.lineTotal), columnX[5] + 4, cursorY + lineHeight - 5);
+    pdf.text(formatHumanDate(item.startDate), columnX[1] + 4, rowMiddle, textBaseline);
+    pdf.text(formatHumanDate(item.endDate), columnX[2] + 4, rowMiddle, textBaseline);
+    pdf.text(String(item.days), columnX[3] + 4, rowMiddle, textBaseline);
+    pdf.text(formatCurrency(settings.currencySymbol, item.dailyRate), columnX[4] + 4, rowMiddle, textBaseline);
+    pdf.text(formatCurrency(settings.currencySymbol, item.lineTotal), columnX[5] + 4, rowMiddle, textBaseline);
 
     pdf.line(tableX, rowY - 2, tableX + tableWidth, rowY - 2);
     cursorY += rowHeight;
