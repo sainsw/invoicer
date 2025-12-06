@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CurrencyPicker, currencyOptions } from '@/components/CurrencyPicker';
 import { defaultSettings } from '@/lib/defaults';
 import { Settings } from '@/lib/types';
@@ -30,14 +30,34 @@ export const SettingsDrawer = ({
   buttonClasses,
   reminderMessage,
 }: SettingsDrawerProps) => {
-  if (!open) {
-    return null;
-  }
+  const [isVisible, setIsVisible] = useState(open);
+  const [isClosing, setIsClosing] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setIsVisible(true);
+      setIsClosing(false);
+      return;
+    }
+    if (!isVisible) {
+      return;
+    }
+    setIsClosing(true);
+    const timeout = setTimeout(() => {
+      setIsVisible(false);
+      setIsClosing(false);
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [open, isVisible]);
 
   const currencyIndex = useMemo(
     () => currencyOptions.findIndex((option) => option.symbol === settings.currencySymbol),
     [settings.currencySymbol]
   );
+
+  if (!open && !isVisible) {
+    return null;
+  }
 
   const handleInput = (field: keyof Settings) =>
     (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -111,13 +131,13 @@ export const SettingsDrawer = ({
 
   return (
     <div
-      className="fixed inset-0 z-20 flex justify-end bg-slate-900/50 backdrop-blur-sm"
+      className={`fixed inset-0 z-20 flex justify-end bg-slate-900/50 backdrop-blur-sm ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`}
       role="dialog"
       aria-modal="true"
       onClick={onClose}
       >
         <div
-          className="h-full w-full max-w-md overflow-y-auto bg-white px-6 py-8 shadow-2xl shadow-slate-900/30 transition-colors sm:px-8 dark:bg-slate-950 dark:shadow-black/50"
+          className={`h-full w-full max-w-md overflow-y-auto bg-white px-6 py-8 shadow-2xl shadow-slate-900/30 transition-colors ${isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'} sm:px-8 dark:bg-slate-950 dark:shadow-black/50`}
           onClick={(event) => event.stopPropagation()}
         >
         <div className="flex items-center justify-between gap-4">
@@ -143,7 +163,7 @@ export const SettingsDrawer = ({
           {field('Phone', 'phone')}
           {field('Default Client Name', 'defaultClientName')}
           {field('Default Daily Rate', 'defaultDailyRate')}
-      <div className="space-y-2">
+          <div className="space-y-2">
             <div className="space-y-1.5">
               <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Currency</p>
               <CurrencyPicker selectedSymbol={settings.currencySymbol} onSelect={handleCurrencySelect} />
