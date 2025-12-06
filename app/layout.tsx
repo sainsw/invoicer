@@ -6,15 +6,16 @@ import './globals.css';
 
 const jakarta = Plus_Jakarta_Sans({ subsets: ['latin'], variable: '--font-sans', display: 'swap' });
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://invoicer.ainsworth.dev';
-const siteName = 'Simple Invoice Generator';
-const siteDescription = 'Generate professional invoices in seconds and download them as PDFs—no backend required.';
+const siteName = 'Invoicer';
+const siteDescription =
+  'Invoicer lets you generate professional invoices in seconds and download them as PDFs—no backend required.';
 const socialImage = `${siteUrl}/opengraph-image`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
     default: siteName,
-    template: '%s | Simple Invoice Generator',
+    template: '%s | Invoicer',
   },
   description: siteDescription,
   keywords: ['invoice generator', 'PDF invoices', 'freelance invoicing', 'browser invoice builder'],

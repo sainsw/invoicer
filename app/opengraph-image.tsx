@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
-export const alt = 'Simple Invoice Generator social preview';
+export const alt = 'Invoicer social preview';
 
 export default async function Image() {
   return new ImageResponse(
@@ -25,9 +25,7 @@ export default async function Image() {
         </div>
 
         <div style={{ display: 'grid', gap: 24 }}>
-          <div style={{ fontSize: 88, fontWeight: 700, letterSpacing: -2 }}>
-            Simple Invoice Generator
-          </div>
+          <div style={{ fontSize: 88, fontWeight: 700, letterSpacing: -2 }}>Invoicer</div>
           <div style={{ fontSize: 36, maxWidth: 900, lineHeight: 1.4 }}>
             Build polished PDF invoices in your browser with weekday-aware totals and saved defaults.
           </div>

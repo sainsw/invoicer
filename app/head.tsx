@@ -3,12 +3,12 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://invoicer.ainsworth.
 const structuredData = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
-  name: 'Simple Invoice Generator',
+  name: 'Invoicer',
   url: siteUrl,
   applicationCategory: 'BusinessApplication',
   operatingSystem: 'Web',
   description:
-    'Create professional invoices in your browser, calculate weekday-only work blocks, and export polished PDFs instantly.',
+    'Invoicer is a browser invoice builder that calculates weekday-only work blocks and exports polished PDFs instantly.',
   offers: {
     '@type': 'Offer',
     price: '0',
