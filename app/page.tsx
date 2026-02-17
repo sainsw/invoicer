@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { ExpensesTable } from '@/components/ExpensesTable';
 import { SettingsDrawer } from '@/components/SettingsDrawer';
 import { WorkBlocksTable } from '@/components/WorkBlocksTable';
 import { usePersistentState } from '@/hooks/usePersistentState';
@@ -8,6 +9,7 @@ import {
   createWorkBlockId,
   defaultInvoice,
   defaultSettings,
+  emptyExpense,
   emptyWorkBlock,
   INVOICE_KEY,
   SETTINGS_KEY,
@@ -15,7 +17,7 @@ import {
 import { countWeekdaysInclusive, isValidDateRange } from '@/lib/date';
 import { detectCurrencySymbol } from '@/lib/currency';
 import { generateInvoicePdf } from '@/lib/pdf';
-import { ComputedWorkBlock, InvoiceData, Settings, WorkBlock } from '@/lib/types';
+import { ComputedWorkBlock, Expense, InvoiceData, Settings, WorkBlock } from '@/lib/types';
 
 const disablePdf = (blocks: ComputedWorkBlock[]) =>
   blocks.length === 0 || blocks.some((block) => block.hasError || block.days === 0);
@@ -52,22 +54,38 @@ export default function HomePage() {
       invoice.workBlocks.map((block) => {
         const validRange = isValidDateRange(block.startDate, block.endDate);
         const days = validRange ? countWeekdaysInclusive(block.startDate, block.endDate) : 0;
+        const dailyRate = Math.max(0, block.dailyRate || 0);
+        const blockTotal = Math.max(0, block.blockTotal || 0);
+        const lineTotal = Number((days * dailyRate).toFixed(2));
         return {
           ...block,
+          billingMode: block.billingMode === 'block' ? 'block' : 'daily',
+          blockTotal,
           days,
-          lineTotal: Number((days * (block.dailyRate || 0)).toFixed(2)),
+          effectiveDailyRate: dailyRate,
+          lineTotal,
           hasError: !validRange,
         };
       }),
     [invoice.workBlocks]
   );
 
+  const expenses = useMemo(() => (Array.isArray(invoice.expenses) ? invoice.expenses : []), [invoice.expenses]);
+
   const totals = useMemo(() => {
-    const subtotal = computedBlocks.reduce((acc, block) => acc + (block.hasError ? 0 : block.lineTotal), 0);
-    const tax = Number(((subtotal * (invoice.taxRate || 0)) / 100).toFixed(2));
-    const total = Number((subtotal + tax).toFixed(2));
-    return { subtotal, tax, total };
-  }, [computedBlocks, invoice.taxRate]);
+    const workSubtotal = Number(
+      computedBlocks.reduce((acc, block) => acc + (block.hasError ? 0 : block.lineTotal), 0).toFixed(2)
+    );
+    const expensesSubtotal = Number(
+      expenses
+        .reduce((acc, expense) => acc + (Number.isFinite(expense.value) ? Math.max(0, expense.value) : 0), 0)
+        .toFixed(2)
+    );
+    const preTaxSubtotal = Number((workSubtotal + expensesSubtotal).toFixed(2));
+    const taxAmount = Number(((preTaxSubtotal * (invoice.taxRate || 0)) / 100).toFixed(2));
+    const total = Number((preTaxSubtotal + taxAmount).toFixed(2));
+    return { workSubtotal, expensesSubtotal, preTaxSubtotal, taxAmount, total };
+  }, [computedBlocks, expenses, invoice.taxRate]);
 
   const usingPlaceholderSettings = useMemo(() => {
     const defaults = defaultSettings();
@@ -106,6 +124,39 @@ export default function HomePage() {
     }
   }, [setSettings, settings.bodyColor, settings.headerColor, settingsReady]);
 
+  useEffect(() => {
+    if (!invoiceReady) {
+      return;
+    }
+    setInvoice((prev) => {
+      let changed = false;
+      const nextBlocks = prev.workBlocks.map((block) => {
+        const billingMode: WorkBlock['billingMode'] = block.billingMode === 'block' ? 'block' : 'daily';
+        const blockTotal = Number.isFinite(block.blockTotal) ? Math.max(0, block.blockTotal) : 0;
+        if (billingMode !== block.billingMode || blockTotal !== block.blockTotal) {
+          changed = true;
+        }
+        return { ...block, billingMode, blockTotal };
+      });
+      const nextExpenses = Array.isArray(prev.expenses)
+        ? prev.expenses.map((expense) => {
+            const nextValue = Number.isFinite(expense.value) ? Math.max(0, expense.value) : 0;
+            if (nextValue !== expense.value) {
+              changed = true;
+            }
+            return { ...expense, value: nextValue };
+          })
+        : [];
+      if (!Array.isArray(prev.expenses)) {
+        changed = true;
+      }
+      if (!changed) {
+        return prev;
+      }
+      return { ...prev, workBlocks: nextBlocks, expenses: nextExpenses };
+    });
+  }, [invoiceReady, setInvoice]);
+
   const localeDefaultSettings = () => {
     const base = defaultSettings();
     const symbol = detectCurrencySymbol();
@@ -122,7 +173,53 @@ export default function HomePage() {
   const handleWorkBlockChange = (id: string, patch: Partial<WorkBlock>) => {
     setInvoice((prev) => ({
       ...prev,
-      workBlocks: prev.workBlocks.map((block) => (block.id === id ? { ...block, ...patch } : block)),
+      workBlocks: prev.workBlocks.map((block) => {
+        if (block.id !== id) {
+          return block;
+        }
+
+        const next = { ...block, ...patch };
+        const validRange = isValidDateRange(next.startDate, next.endDate);
+        const days = validRange ? countWeekdaysInclusive(next.startDate, next.endDate) : 0;
+        const isDailyEdit = Object.prototype.hasOwnProperty.call(patch, 'dailyRate')
+          && !Object.prototype.hasOwnProperty.call(patch, 'blockTotal');
+        const isBlockEdit = Object.prototype.hasOwnProperty.call(patch, 'blockTotal')
+          && !Object.prototype.hasOwnProperty.call(patch, 'dailyRate');
+        const isDateEdit = Object.prototype.hasOwnProperty.call(patch, 'startDate')
+          || Object.prototype.hasOwnProperty.call(patch, 'endDate');
+
+        if (isDailyEdit) {
+          const dailyRate = Math.max(0, Number(next.dailyRate) || 0);
+          return {
+            ...next,
+            billingMode: 'daily',
+            dailyRate,
+            blockTotal: Number((dailyRate * days).toFixed(2)),
+          };
+        }
+
+        if (isBlockEdit) {
+          const blockTotal = Math.max(0, Number(next.blockTotal) || 0);
+          const dailyRate = days > 0 ? blockTotal / days : 0;
+          return {
+            ...next,
+            billingMode: 'block',
+            blockTotal,
+            dailyRate: Number(dailyRate.toFixed(4)),
+          };
+        }
+
+        if (isDateEdit) {
+          const dailyRate = Math.max(0, Number(next.dailyRate) || 0);
+          return {
+            ...next,
+            dailyRate,
+            blockTotal: Number((dailyRate * days).toFixed(2)),
+          };
+        }
+
+        return next;
+      }),
     }));
   };
 
@@ -153,6 +250,32 @@ export default function HomePage() {
 
   const handleSettingsChange = (value: Settings) => {
     setSettings(value);
+  };
+
+  const addExpense = () => {
+    setInvoice((prev) => ({
+      ...prev,
+      expenses: [
+        ...(Array.isArray(prev.expenses) ? prev.expenses : []),
+        emptyExpense(prev.issueDate),
+      ],
+    }));
+  };
+
+  const handleExpenseChange = (id: string, patch: Partial<Expense>) => {
+    setInvoice((prev) => ({
+      ...prev,
+      expenses: (Array.isArray(prev.expenses) ? prev.expenses : []).map((expense) =>
+        expense.id === id ? { ...expense, ...patch } : expense
+      ),
+    }));
+  };
+
+  const removeExpense = (id: string) => {
+    setInvoice((prev) => ({
+      ...prev,
+      expenses: (Array.isArray(prev.expenses) ? prev.expenses : []).filter((expense) => expense.id !== id),
+    }));
   };
 
   const resetSettingsToDefaults = () => {
@@ -246,6 +369,25 @@ export default function HomePage() {
                 </button>
               </div>
             )}
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-4">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Expenses (optional)</h3>
+                <button type="button" className={buttonSecondary} onClick={addExpense}>
+                  + Add expense
+                </button>
+              </div>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Expenses are added to the invoice subtotal before tax.
+              </p>
+            </div>
+
+            <ExpensesTable
+              expenses={expenses}
+              currencySymbol={settings.currencySymbol}
+              onExpenseChange={handleExpenseChange}
+              onRemove={removeExpense}
+            />
 
             <div className="space-y-2">
               <label htmlFor="notes" className="text-sm font-semibold text-slate-800 dark:text-slate-200">
@@ -440,12 +582,14 @@ function TotalsPanel({
   setTaxRate,
   currency,
 }: {
-  totals: { subtotal: number; tax: number; total: number };
+  totals: { workSubtotal: number; expensesSubtotal: number; preTaxSubtotal: number; taxAmount: number; total: number };
   taxRate: number;
   setTaxRate: (tax: number) => void;
   currency: string;
 }) {
   const rowClass = 'flex items-center justify-between text-base text-slate-700 dark:text-slate-200';
+  const showTaxLine = taxRate > 0 && totals.taxAmount > 0;
+  const showPreTaxLine = showTaxLine;
 
   return (
     <div className="space-y-5">
@@ -464,19 +608,37 @@ function TotalsPanel({
       </div>
       <div className="space-y-3 rounded-2xl border border-slate-200/80 bg-slate-50 px-4 py-4 shadow-inner shadow-slate-900/5 dark:border-slate-800 dark:bg-slate-900 dark:shadow-none">
         <div className={rowClass}>
-          <span>Subtotal</span>
+          <span>Work subtotal</span>
           <strong className="text-lg text-slate-900 dark:text-white">
             {currency}
-            {totals.subtotal.toFixed(2)}
+            {totals.workSubtotal.toFixed(2)}
           </strong>
         </div>
         <div className={rowClass}>
-          <span>Tax</span>
+          <span>Expenses</span>
           <strong className="text-lg text-slate-900 dark:text-white">
             {currency}
-            {totals.tax.toFixed(2)}
+            {totals.expensesSubtotal.toFixed(2)}
           </strong>
         </div>
+        {showPreTaxLine && (
+          <div className={rowClass}>
+            <span>Subtotal before tax</span>
+            <strong className="text-lg text-slate-900 dark:text-white">
+              {currency}
+              {totals.preTaxSubtotal.toFixed(2)}
+            </strong>
+          </div>
+        )}
+        {showTaxLine && (
+          <div className={rowClass}>
+            <span>Tax</span>
+            <strong className="text-lg text-slate-900 dark:text-white">
+              {currency}
+              {totals.taxAmount.toFixed(2)}
+            </strong>
+          </div>
+        )}
         <div className={`${rowClass} border-t border-slate-200 pt-3 text-lg font-semibold text-slate-900 dark:border-slate-700 dark:text-white`}>
           <span>Total</span>
           <strong className="text-2xl text-slate-900 dark:text-white">

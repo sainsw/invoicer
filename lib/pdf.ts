@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import { formatHumanDate } from './date';
-import { ComputedWorkBlock, InvoiceData, Settings, Totals } from './types';
+import { ComputedWorkBlock, Expense, InvoiceData, Settings, Totals } from './types';
 
 const lineHeight = 16;
 
@@ -17,6 +17,13 @@ const drawMultiline = (pdf: jsPDF, text: string, x: number, y: number, maxWidth:
 };
 
 const formatCurrency = (symbol: string, value: number) => `${symbol}${value.toFixed(2)}`;
+const safeExpenseDate = (value: string) => {
+  try {
+    return formatHumanDate(value);
+  } catch {
+    return '—';
+  }
+};
 
 const parseHexColor = (value: string) => {
   const match = /^#?([a-fA-F0-9]{6})$/.exec((value || '').trim());
@@ -184,7 +191,7 @@ export const generateInvoicePdf = ({ settings, invoice, lineItems, totals }: Pdf
     pdf.text(formatHumanDate(item.startDate), columnX[1] + 4, rowMiddle, textBaseline);
     pdf.text(formatHumanDate(item.endDate), columnX[2] + 4, rowMiddle, textBaseline);
     pdf.text(String(item.days), columnX[3] + 4, rowMiddle, textBaseline);
-    pdf.text(formatCurrency(settings.currencySymbol, item.dailyRate), columnX[4] + 4, rowMiddle, textBaseline);
+    pdf.text(formatCurrency(settings.currencySymbol, item.effectiveDailyRate), columnX[4] + 4, rowMiddle, textBaseline);
     pdf.text(formatCurrency(settings.currencySymbol, item.lineTotal), columnX[5] + 4, rowMiddle, textBaseline);
 
     pdf.line(tableX, rowY - 2, tableX + tableWidth, rowY - 2);
@@ -192,18 +199,67 @@ export const generateInvoicePdf = ({ settings, invoice, lineItems, totals }: Pdf
   });
   pdf.line(tableX, cursorY, tableX + tableWidth, cursorY);
 
+  const expenses = Array.isArray(invoice.expenses) ? invoice.expenses : [];
+  if (expenses.length > 0) {
+    cursorY += lineHeight * 1.75;
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Expenses', margin, cursorY);
+    cursorY += lineHeight;
+
+    const expenseColumns = [
+      { label: 'Date', width: 110 },
+      { label: 'Notes', width: tableWidth - 230 },
+      { label: 'Amount', width: 120 },
+    ];
+    const expenseX: number[] = [];
+    let currentX = tableX;
+    expenseColumns.forEach((col) => {
+      expenseX.push(currentX);
+      currentX += col.width;
+    });
+
+    pdf.setFillColor(tableHeaderFill.r, tableHeaderFill.g, tableHeaderFill.b);
+    pdf.rect(tableX, cursorY, tableWidth, lineHeight, 'F');
+    const expenseHeaderY = cursorY + lineHeight / 2;
+    expenseColumns.forEach((col, index) => {
+      pdf.text(col.label, expenseX[index] + 4, expenseHeaderY, { baseline: 'middle' });
+    });
+    cursorY += lineHeight + 4;
+    pdf.setFont('helvetica', 'normal');
+
+    expenses.forEach((expense: Expense) => {
+      const rowY = cursorY;
+      const lines = pdf.splitTextToSize(expense.notes || 'Expense', expenseColumns[1].width - 8);
+      const rowHeight = Math.max(lineHeight, lines.length * lineHeight);
+      const rowMiddle = rowY + rowHeight / 2;
+      const textBaseline = { baseline: 'middle' } as const;
+      pdf.text(safeExpenseDate(expense.date), expenseX[0] + 4, rowMiddle, textBaseline);
+      pdf.text(lines, expenseX[1] + 4, rowMiddle, textBaseline);
+      pdf.text(formatCurrency(settings.currencySymbol, Math.max(0, expense.value || 0)), expenseX[2] + 4, rowMiddle, textBaseline);
+      pdf.line(tableX, rowY - 2, tableX + tableWidth, rowY - 2);
+      cursorY += rowHeight;
+    });
+    pdf.line(tableX, cursorY, tableX + tableWidth, cursorY);
+  }
+
   cursorY += lineHeight;
   const totalsX = tableX + tableWidth - 200;
-  ['Subtotal', 'Tax', 'Grand total'].forEach((label, index) => {
-    const value = [
-      totals.subtotal,
-      totals.tax,
-      totals.total,
-    ][index];
-    const isBold = label === 'Grand total';
+  const totalRows: Array<{ label: string; value: number; bold?: boolean }> = [
+    { label: 'Work subtotal', value: totals.workSubtotal },
+    { label: 'Expenses', value: totals.expensesSubtotal },
+  ];
+  const showTaxRows = (invoice.taxRate || 0) > 0 && totals.taxAmount > 0;
+  if (showTaxRows) {
+    totalRows.push({ label: 'Subtotal before tax', value: totals.preTaxSubtotal });
+    totalRows.push({ label: 'Tax', value: totals.taxAmount });
+  }
+  totalRows.push({ label: 'Grand total', value: totals.total, bold: true });
+
+  totalRows.forEach((row) => {
+    const isBold = Boolean(row.bold);
     pdf.setFont('helvetica', isBold ? 'bold' : 'normal');
-    pdf.text(label, totalsX, cursorY);
-    pdf.text(formatCurrency(settings.currencySymbol, value), totalsX + 100, cursorY);
+    pdf.text(row.label, totalsX, cursorY);
+    pdf.text(formatCurrency(settings.currencySymbol, row.value), totalsX + 100, cursorY);
     cursorY += lineHeight;
   });
 

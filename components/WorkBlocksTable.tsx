@@ -47,6 +47,9 @@ export const WorkBlocksTable = ({ blocks, currencySymbol, onBlockChange, onRemov
                 Daily rate
               </th>
               <th scope="col" className="px-5 py-3 text-left">
+                Block total
+              </th>
+              <th scope="col" className="px-5 py-3 text-left">
                 Total
               </th>
               <th scope="col" className="px-5 py-3" />
@@ -95,6 +98,15 @@ export const WorkBlocksTable = ({ blocks, currencySymbol, onBlockChange, onRemov
                     className={rateInputClass}
                     value={block.dailyRate}
                     onChange={(event) => onBlockChange(block.id, { dailyRate: Number(event.target.value) || 0 })}
+                  />
+                </td>
+                <td className="px-5 py-3">
+                  <input
+                    type="number"
+                    min={0}
+                    className={rateInputClass}
+                    value={block.blockTotal}
+                    onChange={(event) => onBlockChange(block.id, { blockTotal: Number(event.target.value) || 0 })}
                   />
                 </td>
                 <td className="px-5 py-3 pt-6 font-semibold text-slate-900 dark:text-white">
@@ -177,6 +189,17 @@ export const WorkBlocksTable = ({ blocks, currencySymbol, onBlockChange, onRemov
                   className={tableInputClass}
                   value={block.dailyRate}
                   onChange={(event) => onBlockChange(block.id, { dailyRate: Number(event.target.value) || 0 })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Block total</label>
+                <input
+                  type="number"
+                  min={0}
+                  className={tableInputClass}
+                  value={block.blockTotal}
+                  disabled={block.billingMode === 'daily'}
+                  onChange={(event) => onBlockChange(block.id, { blockTotal: Number(event.target.value) || 0 })}
                 />
               </div>
               <div className="space-y-1.5">

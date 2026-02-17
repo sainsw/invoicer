@@ -1,11 +1,12 @@
 import { FALLBACK_CURRENCY } from './currency';
 import { formatISODate, monthKey, parseMonthKey } from './date';
-import { InvoiceData, Settings, WorkBlock } from './types';
+import { Expense, InvoiceData, Settings, WorkBlock } from './types';
 
 export const SETTINGS_KEY = 'simpleInvoice.settings';
 export const INVOICE_KEY = 'simpleInvoice.lastInvoice';
 
 export const createWorkBlockId = () => `block-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+export const createExpenseId = () => `expense-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
 export const defaultSettings = (): Settings => ({
   businessName: 'Your Name or Company',
@@ -33,9 +34,18 @@ export const emptyWorkBlock = (dailyRate: number, month: string): WorkBlock => {
     description: '',
     startDate: startOfMonth,
     endDate: endOfMonth,
+    billingMode: 'daily',
     dailyRate,
+    blockTotal: 0,
   };
 };
+
+export const emptyExpense = (date: string): Expense => ({
+  id: createExpenseId(),
+  date,
+  value: 0,
+  notes: '',
+});
 
 export const defaultInvoice = (settings: Settings): InvoiceData => {
   const { key } = monthKey(new Date());
@@ -51,5 +61,6 @@ export const defaultInvoice = (settings: Settings): InvoiceData => {
     notes: settings.defaultNotes,
     taxRate: 0,
     workBlocks: [emptyWorkBlock(settings.defaultDailyRate, key)],
+    expenses: [],
   };
 };

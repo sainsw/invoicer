@@ -18,13 +18,23 @@ export type WorkBlock = {
   description: string;
   startDate: string;
   endDate: string;
+  billingMode: 'daily' | 'block';
   dailyRate: number;
+  blockTotal: number;
 };
 
 export type ComputedWorkBlock = WorkBlock & {
   days: number;
+  effectiveDailyRate: number;
   lineTotal: number;
   hasError: boolean;
+};
+
+export type Expense = {
+  id: string;
+  date: string;
+  value: number;
+  notes: string;
 };
 
 export type InvoiceData = {
@@ -38,10 +48,13 @@ export type InvoiceData = {
   notes: string;
   taxRate: number;
   workBlocks: WorkBlock[];
+  expenses: Expense[];
 };
 
 export type Totals = {
-  subtotal: number;
-  tax: number;
+  workSubtotal: number;
+  expensesSubtotal: number;
+  preTaxSubtotal: number;
+  taxAmount: number;
   total: number;
 };
