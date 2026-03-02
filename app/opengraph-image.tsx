@@ -24,7 +24,7 @@ export default async function Image() {
           invoicer.ainsworth.dev
         </div>
 
-        <div style={{ display: 'grid', gap: 24 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', rowGap: 24 }}>
           <div style={{ fontSize: 88, fontWeight: 700, letterSpacing: -2 }}>Invoicer</div>
           <div style={{ fontSize: 36, maxWidth: 900, lineHeight: 1.4 }}>
             Build polished PDF invoices in your browser with weekday-aware totals and saved defaults.
