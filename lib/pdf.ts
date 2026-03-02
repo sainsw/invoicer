@@ -278,8 +278,8 @@ export const generateInvoicePdf = ({ settings, invoice, lineItems, totals }: Pdf
   cursorY = drawMultiline(pdf, settings.bankDetails, margin, cursorY, pageWidth - margin * 2);
 
   const filename = invoice.invoiceNumber
-    ? `invoice-${invoice.invoiceNumber}.pdf`
-    : `invoice-${invoice.issueDate}.pdf`;
+    ? `${settings.businessName}-${invoice.issueDate}-${invoice.invoiceNumber}.pdf`
+    : `invoice-${invoice.invoiceNumber}.pdf`;
 
   pdf.save(filename.replace(/\s+/g, '-'));
 };
