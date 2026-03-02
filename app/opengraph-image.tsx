@@ -14,8 +14,7 @@ export default async function Image() {
           flexDirection: 'column',
           justifyContent: 'space-between',
           padding: '72px',
-          background:
-            'radial-gradient(circle at 25% 20%, rgba(129, 140, 248, 0.28), transparent 35%), radial-gradient(circle at 80% 10%, rgba(94, 234, 212, 0.3), transparent 30%), radial-gradient(circle at 60% 70%, rgba(248, 180, 2, 0.25), transparent 32%), #0f172a',
+          backgroundColor: '#0f172a',
           color: '#e2e8f0',
           fontFamily: '"Inter", "Segoe UI", sans-serif',
         }}
