@@ -172,21 +172,45 @@ export const generateInvoicePdf = ({ settings, invoice, lineItems, totals }: Pdf
 
   pdf.setFont('helvetica', 'bold');
   pdf.setFillColor(tableHeaderFill.r, tableHeaderFill.g, tableHeaderFill.b);
-  pdf.rect(tableX, cursorY, tableWidth, lineHeight, 'F');
+  pdf.rect(tableX, cursorY, tableWidth, lineHeight + 4, 'F');
   const headerLabelY = cursorY + lineHeight / 2;
   columns.forEach((col, index) => {
     pdf.text(col.label, columnX[index] + 4, headerLabelY, { baseline: 'middle' });
   });
   cursorY += lineHeight + 4;
 
+  const bottomMargin = margin;
+
+  const newPage = () => {
+    pdf.addPage();
+    pdf.setFillColor(bodyColor.r, bodyColor.g, bodyColor.b);
+    pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+    pdf.setTextColor(bodyTextColor, bodyTextColor, bodyTextColor);
+    pdf.setDrawColor(bodyTextColor, bodyTextColor, bodyTextColor);
+    cursorY = margin;
+  };
+
+  const ensureSpace = (needed: number) => {
+    if (cursorY + needed > pageHeight - bottomMargin) {
+      newPage();
+    }
+  };
+
+  const renderLines = (lines: string[], x: number, topLineMiddleY: number) => {
+    lines.forEach((line, i) => {
+      pdf.text(line, x, topLineMiddleY + i * lineHeight, { baseline: 'middle' });
+    });
+  };
+
   pdf.setFont('helvetica', 'normal');
   lineItems.forEach((item) => {
-    const rowY = cursorY;
     const lines = pdf.splitTextToSize(item.description || 'Work', columns[0].width - 8);
     const rowHeight = Math.max(lineHeight, lines.length * lineHeight);
+    ensureSpace(rowHeight);
+    const rowY = cursorY;
     const rowMiddle = rowY + rowHeight / 2;
     const textBaseline = { baseline: 'middle' } as const;
-    pdf.text(lines, columnX[0] + 4, rowMiddle, textBaseline);
+    renderLines(lines, columnX[0] + 4, rowY + lineHeight / 2);
 
     pdf.text(formatHumanDate(item.startDate), columnX[1] + 4, rowMiddle, textBaseline);
     pdf.text(formatHumanDate(item.endDate), columnX[2] + 4, rowMiddle, textBaseline);
@@ -194,13 +218,14 @@ export const generateInvoicePdf = ({ settings, invoice, lineItems, totals }: Pdf
     pdf.text(formatCurrency(settings.currencySymbol, item.effectiveDailyRate), columnX[4] + 4, rowMiddle, textBaseline);
     pdf.text(formatCurrency(settings.currencySymbol, item.lineTotal), columnX[5] + 4, rowMiddle, textBaseline);
 
-    pdf.line(tableX, rowY - 2, tableX + tableWidth, rowY - 2);
+    pdf.line(tableX, rowY, tableX + tableWidth, rowY);
     cursorY += rowHeight;
   });
   pdf.line(tableX, cursorY, tableX + tableWidth, cursorY);
 
   const expenses = Array.isArray(invoice.expenses) ? invoice.expenses : [];
   if (expenses.length > 0) {
+    ensureSpace(lineHeight * 3.75);
     cursorY += lineHeight * 1.75;
     pdf.setFont('helvetica', 'bold');
     pdf.text('Expenses', margin, cursorY);
@@ -219,7 +244,7 @@ export const generateInvoicePdf = ({ settings, invoice, lineItems, totals }: Pdf
     });
 
     pdf.setFillColor(tableHeaderFill.r, tableHeaderFill.g, tableHeaderFill.b);
-    pdf.rect(tableX, cursorY, tableWidth, lineHeight, 'F');
+    pdf.rect(tableX, cursorY, tableWidth, lineHeight + 4, 'F');
     const expenseHeaderY = cursorY + lineHeight / 2;
     expenseColumns.forEach((col, index) => {
       pdf.text(col.label, expenseX[index] + 4, expenseHeaderY, { baseline: 'middle' });
@@ -228,22 +253,21 @@ export const generateInvoicePdf = ({ settings, invoice, lineItems, totals }: Pdf
     pdf.setFont('helvetica', 'normal');
 
     expenses.forEach((expense: Expense) => {
-      const rowY = cursorY;
       const lines = pdf.splitTextToSize(expense.notes || 'Expense', expenseColumns[1].width - 8);
       const rowHeight = Math.max(lineHeight, lines.length * lineHeight);
+      ensureSpace(rowHeight);
+      const rowY = cursorY;
       const rowMiddle = rowY + rowHeight / 2;
       const textBaseline = { baseline: 'middle' } as const;
       pdf.text(safeExpenseDate(expense.date), expenseX[0] + 4, rowMiddle, textBaseline);
-      pdf.text(lines, expenseX[1] + 4, rowMiddle, textBaseline);
+      renderLines(lines, expenseX[1] + 4, rowY + lineHeight / 2);
       pdf.text(formatCurrency(settings.currencySymbol, Math.max(0, expense.value || 0)), expenseX[2] + 4, rowMiddle, textBaseline);
-      pdf.line(tableX, rowY - 2, tableX + tableWidth, rowY - 2);
+      pdf.line(tableX, rowY, tableX + tableWidth, rowY);
       cursorY += rowHeight;
     });
     pdf.line(tableX, cursorY, tableX + tableWidth, cursorY);
   }
 
-  cursorY += lineHeight;
-  const totalsX = tableX + tableWidth - 200;
   const totalRows: Array<{ label: string; value: number; bold?: boolean }> = [
     { label: 'Work subtotal', value: totals.workSubtotal },
     { label: 'Expenses', value: totals.expensesSubtotal },
@@ -255,6 +279,9 @@ export const generateInvoicePdf = ({ settings, invoice, lineItems, totals }: Pdf
   }
   totalRows.push({ label: 'Grand total', value: totals.total, bold: true });
 
+  ensureSpace(lineHeight * (totalRows.length + 1));
+  cursorY += lineHeight;
+  const totalsX = tableX + tableWidth - 200;
   totalRows.forEach((row) => {
     const isBold = Boolean(row.bold);
     pdf.setFont('helvetica', isBold ? 'bold' : 'normal');
@@ -263,6 +290,8 @@ export const generateInvoicePdf = ({ settings, invoice, lineItems, totals }: Pdf
     cursorY += lineHeight;
   });
 
+  const notesLines = pdf.splitTextToSize(invoice.notes || '—', pageWidth - margin * 2);
+  ensureSpace(lineHeight * 2 + notesLines.length * lineHeight);
   cursorY += lineHeight;
   pdf.setFont('helvetica', 'bold');
   pdf.text('Notes', margin, cursorY);
@@ -270,12 +299,26 @@ export const generateInvoicePdf = ({ settings, invoice, lineItems, totals }: Pdf
   pdf.setFont('helvetica', 'normal');
   cursorY = drawMultiline(pdf, invoice.notes || '—', margin, cursorY, pageWidth - margin * 2);
 
+  const bankLines = pdf.splitTextToSize(settings.bankDetails || '', pageWidth - margin * 2);
+  ensureSpace(lineHeight * 2 + bankLines.length * lineHeight);
   cursorY += lineHeight / 2;
   pdf.setFont('helvetica', 'bold');
   pdf.text('Payment Details', margin, cursorY);
   cursorY += lineHeight;
   pdf.setFont('helvetica', 'normal');
   cursorY = drawMultiline(pdf, settings.bankDetails, margin, cursorY, pageWidth - margin * 2);
+
+  const totalPages = pdf.getNumberOfPages();
+  if (totalPages > 1) {
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8);
+    const footerAlpha = bodyTextIsDark ? 140 : 160;
+    pdf.setTextColor(footerAlpha, footerAlpha, footerAlpha);
+    for (let p = 1; p <= totalPages; p++) {
+      pdf.setPage(p);
+      pdf.text(`Page ${p} of ${totalPages}`, pageWidth - margin, pageHeight - margin / 2, { align: 'right', baseline: 'middle' });
+    }
+  }
 
   const filename = invoice.invoiceNumber
     ? `${settings.businessName}-${invoice.issueDate}-${invoice.invoiceNumber}.pdf`
