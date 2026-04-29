@@ -1,6 +1,18 @@
 import jsPDF from 'jspdf';
 import { formatHumanDate } from './date';
-import { ComputedWorkBlock, Expense, InvoiceData, Settings, Totals } from './types';
+import { resolveFilename } from './filename';
+import { ComputedWorkBlock, Expense, ExtraReference, InvoiceData, Settings, Totals } from './types';
+
+const isVisibleReference = (ref: ExtraReference) =>
+  Boolean((ref.label && ref.label.trim()) || (ref.value && ref.value.trim()));
+
+const formatReferenceLabel = (label: string) => {
+  const trimmed = (label || '').trim();
+  if (!trimmed) {
+    return '';
+  }
+  return /[:?!.,]$/.test(trimmed) ? trimmed : `${trimmed}:`;
+};
 
 const lineHeight = 16;
 
@@ -63,22 +75,37 @@ export const generateInvoicePdf = ({ settings, invoice, lineItems, totals }: Pdf
   const measureMultiline = (text: string, maxWidth: number) =>
     text ? pdf.splitTextToSize(text, maxWidth).length * lineHeight : 0;
 
-  // Pre-compute header height (everything through Bill To)
-  let headerCursor = margin;
+  const extraReferences = Array.isArray(settings.extraReferences) ? settings.extraReferences : [];
+  const topReferences = extraReferences.filter((ref) => ref.showAtTop && isVisibleReference(ref));
+  const bottomReferences = extraReferences.filter((ref) => ref.showAtBottom && isVisibleReference(ref));
+
+  // Pre-compute left-column header height (everything through Bill To)
+  let leftCursor = margin;
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(11);
-  headerCursor += lineHeight; // after business name
-  headerCursor += measureMultiline(settings.businessAddress, 200);
+  leftCursor += lineHeight; // after business name
+  leftCursor += measureMultiline(settings.businessAddress, 200);
   if (contact) {
-    headerCursor += lineHeight;
+    leftCursor += lineHeight;
   }
-  headerCursor += lineHeight; // spacing before Bill To heading
-  headerCursor += lineHeight; // Bill To heading line
-  headerCursor += measureMultiline(billToText, pageWidth - margin * 2);
-  headerCursor += lineHeight / 2; // padding after Bill To block
+  leftCursor += lineHeight; // spacing before Bill To heading
+  leftCursor += lineHeight; // Bill To heading line
+  leftCursor += measureMultiline(billToText, pageWidth - margin * 2);
+  leftCursor += lineHeight / 2; // padding after Bill To block
+
+  // Pre-compute right-column meta block height so the header fits both sides
+  const metaValueWidth = 110;
+  let metaBlockCursor = margin;
+  metaBlockCursor += lineHeight; // 'Invoice Details' heading
+  metaBlockCursor += lineHeight * 4; // four standard meta lines
+  topReferences.forEach((ref) => {
+    const valueLines = pdf.splitTextToSize(ref.value || '—', metaValueWidth);
+    metaBlockCursor += Math.max(lineHeight, valueLines.length * lineHeight);
+  });
+  metaBlockCursor += lineHeight / 2;
 
   const headerTop = 0;
-  const headerHeight = headerCursor - headerTop;
+  const headerHeight = Math.max(leftCursor, metaBlockCursor) - headerTop;
 
   pdf.setFillColor(headerColor.r, headerColor.g, headerColor.b);
   pdf.rect(0, headerTop, pageWidth, headerHeight, 'F');
@@ -123,6 +150,16 @@ export const generateInvoicePdf = ({ settings, invoice, lineItems, totals }: Pdf
     pdf.text(label, metaX, metaCursor);
     pdf.text(value, metaX + 90, metaCursor);
     metaCursor += lineHeight;
+  });
+  topReferences.forEach((ref) => {
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(formatReferenceLabel(ref.label) || '—', metaX, metaCursor);
+    pdf.setFont('helvetica', 'normal');
+    const valueLines = pdf.splitTextToSize(ref.value || '—', metaValueWidth);
+    valueLines.forEach((line: string, index: number) => {
+      pdf.text(line, metaX + 90, metaCursor + index * lineHeight);
+    });
+    metaCursor += Math.max(lineHeight, valueLines.length * lineHeight);
   });
 
   cursorY += lineHeight;
@@ -308,6 +345,24 @@ export const generateInvoicePdf = ({ settings, invoice, lineItems, totals }: Pdf
   pdf.setFont('helvetica', 'normal');
   cursorY = drawMultiline(pdf, settings.bankDetails, margin, cursorY, pageWidth - margin * 2);
 
+  if (bottomReferences.length > 0) {
+    const bottomLabelGap = 110;
+    const bottomValueWidth = pageWidth - margin * 2 - bottomLabelGap;
+    cursorY += lineHeight / 2;
+    bottomReferences.forEach((ref) => {
+      const valueLines = pdf.splitTextToSize(ref.value || '—', bottomValueWidth);
+      const rowHeight = Math.max(lineHeight, valueLines.length * lineHeight);
+      ensureSpace(rowHeight);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(formatReferenceLabel(ref.label) || '—', margin, cursorY);
+      pdf.setFont('helvetica', 'normal');
+      valueLines.forEach((line: string, index: number) => {
+        pdf.text(line, margin + bottomLabelGap, cursorY + index * lineHeight);
+      });
+      cursorY += rowHeight;
+    });
+  }
+
   const totalPages = pdf.getNumberOfPages();
   if (totalPages > 1) {
     pdf.setFont('helvetica', 'normal');
@@ -320,9 +375,7 @@ export const generateInvoicePdf = ({ settings, invoice, lineItems, totals }: Pdf
     }
   }
 
-  const filename = [settings.businessName, invoice.issueDate, invoice.invoiceNumber]
-    .filter(Boolean)
-    .join('-') + '.pdf';
+  const filename = resolveFilename(settings.filenameTemplate, { settings, invoice, totals });
 
-  pdf.save(filename.replace(/\s+/g, '-'));
+  pdf.save(filename);
 };

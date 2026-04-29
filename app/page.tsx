@@ -16,6 +16,7 @@ import {
 } from '@/lib/defaults';
 import { countWeekdaysInclusive, isValidDateRange } from '@/lib/date';
 import { detectCurrencySymbol } from '@/lib/currency';
+import { resolveFilename } from '@/lib/filename';
 import { generateInvoicePdf } from '@/lib/pdf';
 import { ComputedWorkBlock, Expense, InvoiceData, Settings, WorkBlock } from '@/lib/types';
 
@@ -121,10 +122,23 @@ export default function HomePage() {
     if (!settings.bodyColor) {
       patch.bodyColor = defaults.bodyColor;
     }
+    if (!Array.isArray(settings.extraReferences)) {
+      patch.extraReferences = defaults.extraReferences;
+    }
+    if (typeof settings.filenameTemplate !== 'string') {
+      patch.filenameTemplate = defaults.filenameTemplate;
+    }
     if (Object.keys(patch).length > 0) {
       setSettings((prev) => ({ ...prev, ...patch }));
     }
-  }, [setSettings, settings.bodyColor, settings.headerColor, settingsReady]);
+  }, [
+    setSettings,
+    settings.bodyColor,
+    settings.extraReferences,
+    settings.filenameTemplate,
+    settings.headerColor,
+    settingsReady,
+  ]);
 
   useEffect(() => {
     if (!invoiceReady) {
@@ -465,6 +479,7 @@ export default function HomePage() {
             ? 'Add your business details before generating your first invoice.'
             : undefined
         }
+        resolveFilenamePreview={(template) => resolveFilename(template, { settings, invoice, totals })}
       />
     </main>
   );

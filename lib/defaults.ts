@@ -1,12 +1,15 @@
 import { FALLBACK_CURRENCY } from './currency';
 import { formatISODate, monthKey, parseMonthKey } from './date';
-import { Expense, InvoiceData, Settings, WorkBlock } from './types';
+import { Expense, ExtraReference, InvoiceData, Settings, WorkBlock } from './types';
 
 export const SETTINGS_KEY = 'simpleInvoice.settings';
 export const INVOICE_KEY = 'simpleInvoice.lastInvoice';
 
+export const DEFAULT_FILENAME_TEMPLATE = '[businessname]-[issuedate]-[invoicenumber]';
+
 export const createWorkBlockId = () => `block-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 export const createExpenseId = () => `expense-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+export const createExtraReferenceId = () => `ref-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
 export const defaultSettings = (): Settings => ({
   businessName: 'Your Name or Company',
@@ -25,6 +28,16 @@ Account Holder Name (as shown on cheques):`,
   headerColor: '#ffffff',
   bodyColor: '#ffffff',
   defaultNotes: 'Thank you for your business! Payment is appreciated within the agreed terms.',
+  extraReferences: [],
+  filenameTemplate: DEFAULT_FILENAME_TEMPLATE,
+});
+
+export const emptyExtraReference = (): ExtraReference => ({
+  id: createExtraReferenceId(),
+  label: '',
+  value: '',
+  showAtTop: true,
+  showAtBottom: false,
 });
 
 export const emptyWorkBlock = (dailyRate: number, month: string): WorkBlock => {

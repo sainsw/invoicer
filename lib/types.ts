@@ -1,3 +1,11 @@
+export type ExtraReference = {
+  id: string;
+  label: string;
+  value: string;
+  showAtTop: boolean;
+  showAtBottom: boolean;
+};
+
 export type Settings = {
   businessName: string;
   businessAddress: string;
@@ -11,6 +19,8 @@ export type Settings = {
   headerColor: string;
   bodyColor: string;
   defaultNotes: string;
+  extraReferences: ExtraReference[];
+  filenameTemplate: string;
 };
 
 export type WorkBlock = {
