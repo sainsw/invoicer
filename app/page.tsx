@@ -55,8 +55,10 @@ export default function HomePage() {
         const validRange = isValidDateRange(block.startDate, block.endDate);
         const days = validRange ? countWeekdaysInclusive(block.startDate, block.endDate) : 0;
         const dailyRate = Math.max(0, block.dailyRate || 0);
-        const blockTotal = Math.max(0, block.blockTotal || 0);
         const lineTotal = Number((days * dailyRate).toFixed(2));
+        const blockTotal = block.billingMode === 'block'
+          ? Math.max(0, block.blockTotal || 0)
+          : lineTotal;
         return {
           ...block,
           billingMode: block.billingMode === 'block' ? 'block' : 'daily',

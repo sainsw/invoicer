@@ -320,9 +320,9 @@ export const generateInvoicePdf = ({ settings, invoice, lineItems, totals }: Pdf
     }
   }
 
-  const filename = invoice.invoiceNumber
-    ? `${settings.businessName}-${invoice.issueDate}-${invoice.invoiceNumber}.pdf`
-    : `invoice-${invoice.invoiceNumber}.pdf`;
+  const filename = [settings.businessName, invoice.issueDate, invoice.invoiceNumber]
+    .filter(Boolean)
+    .join('-') + '.pdf';
 
   pdf.save(filename.replace(/\s+/g, '-'));
 };
