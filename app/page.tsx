@@ -264,6 +264,19 @@ export default function HomePage() {
     }));
   };
 
+  const reorderBlocks = (orderedIds: string[]) => {
+    setInvoice((prev) => {
+      const byId = new Map(prev.workBlocks.map((block) => [block.id, block]));
+      const reordered = orderedIds
+        .map((id) => byId.get(id))
+        .filter((block): block is WorkBlock => Boolean(block));
+      if (reordered.length !== prev.workBlocks.length) {
+        return prev;
+      }
+      return { ...prev, workBlocks: reordered };
+    });
+  };
+
   const handleSettingsChange = (value: Settings) => {
     setSettings(value);
   };
@@ -292,6 +305,20 @@ export default function HomePage() {
       ...prev,
       expenses: (Array.isArray(prev.expenses) ? prev.expenses : []).filter((expense) => expense.id !== id),
     }));
+  };
+
+  const reorderExpenses = (orderedIds: string[]) => {
+    setInvoice((prev) => {
+      const source = Array.isArray(prev.expenses) ? prev.expenses : [];
+      const byId = new Map(source.map((expense) => [expense.id, expense]));
+      const reordered = orderedIds
+        .map((id) => byId.get(id))
+        .filter((expense): expense is Expense => Boolean(expense));
+      if (reordered.length !== source.length) {
+        return prev;
+      }
+      return { ...prev, expenses: reordered };
+    });
   };
 
   const resetSettingsToDefaults = () => {
@@ -376,6 +403,7 @@ export default function HomePage() {
               onBlockChange={handleWorkBlockChange}
               onRemove={removeBlock}
               onDuplicate={duplicateBlock}
+              onReorder={reorderBlocks}
             />
 
             {computedBlocks.length > 1 && (
@@ -403,6 +431,7 @@ export default function HomePage() {
               currencySymbol={settings.currencySymbol}
               onExpenseChange={handleExpenseChange}
               onRemove={removeExpense}
+              onReorder={reorderExpenses}
             />
 
             <div className="space-y-2">
