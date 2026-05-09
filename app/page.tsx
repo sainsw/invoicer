@@ -379,6 +379,7 @@ export default function HomePage() {
   const disableGenerate = !ready || disablePdf(computedBlocks);
 
   return (
+    <>
     <main className="min-h-screen pb-12 pt-10 sm:pt-14">
       <div className="mx-auto flex w-full max-w-[1570px] flex-col gap-6 px-4 sm:px-6 lg:px-8">
         <section className={`${cardClass} space-y-6`}>
@@ -531,9 +532,11 @@ export default function HomePage() {
         resolveFilenamePreview={(template) => resolveFilename(template, { settings, invoice, totals })}
       />
 
-      {/* Track in Accounts toast */}
+    </main>
+
+      {/* Track in Accounts toast — outside <main> to avoid transform/overflow ancestors breaking fixed positioning */}
       {trackingLink && (
-        <div className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-2xl border border-slate-200/80 bg-white px-5 py-3 shadow-xl shadow-slate-900/10 animate-slide-in-right dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/30">
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-white px-5 py-3 shadow-xl shadow-slate-900/10 animate-fade-in dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/30">
           <p className="text-sm text-slate-700 dark:text-slate-200">PDF downloaded.</p>
           <a
             href={trackingLink}
@@ -556,7 +559,7 @@ export default function HomePage() {
           </button>
         </div>
       )}
-    </main>
+    </>
   );
 }
 
