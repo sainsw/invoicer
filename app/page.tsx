@@ -36,6 +36,7 @@ const iconButton =
 export default function HomePage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showSettingsReminder, setShowSettingsReminder] = useState(false);
+  const [trackingLink, setTrackingLink] = useState<string | null>(null);
 
   const {
     value: settings,
@@ -354,6 +355,25 @@ export default function HomePage() {
       return;
     }
     generateInvoicePdf({ settings, invoice, lineItems: computedBlocks, totals });
+
+    // Build "Track in Accounts" link
+    const dueDate = invoice.issueDate
+      ? (() => {
+          const d = new Date(invoice.issueDate);
+          d.setDate(d.getDate() + (settings.defaultPaymentTerms || 30));
+          return d.toISOString().split('T')[0];
+        })()
+      : '';
+    const payload = {
+      invoiceNumber: invoice.invoiceNumber,
+      clientName: invoice.clientName,
+      issueDate: invoice.issueDate,
+      dueDate,
+      amount: totals.total,
+      status: 'sent' as const,
+    };
+    const encoded = btoa(JSON.stringify(payload));
+    setTrackingLink(`https://accounts.ainsworth.dev/invoices?import=${encoded}`);
   };
 
   const disableGenerate = !ready || disablePdf(computedBlocks);
@@ -510,6 +530,32 @@ export default function HomePage() {
         }
         resolveFilenamePreview={(template) => resolveFilename(template, { settings, invoice, totals })}
       />
+
+      {/* Track in Accounts toast */}
+      {trackingLink && (
+        <div className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-2xl border border-slate-200/80 bg-white px-5 py-3 shadow-xl shadow-slate-900/10 animate-slide-in-right dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/30">
+          <p className="text-sm text-slate-700 dark:text-slate-200">PDF downloaded.</p>
+          <a
+            href={trackingLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-brand-600 dark:bg-brand-400 dark:text-slate-900 dark:hover:bg-brand-300"
+          >
+            Track in Accounts
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+            </svg>
+          </a>
+          <button
+            onClick={() => setTrackingLink(null)}
+            className="ml-1 rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
     </main>
   );
 }
