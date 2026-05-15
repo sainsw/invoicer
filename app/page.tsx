@@ -14,11 +14,14 @@ import {
   INVOICE_KEY,
   SETTINGS_KEY,
 } from '@/lib/defaults';
-import { countWeekdaysInclusive, isValidDateRange } from '@/lib/date';
-import { detectCurrencySymbol } from '@/lib/currency';
-import { resolveFilename } from '@/lib/filename';
-import { generateInvoicePdf } from '@/lib/pdf';
-import { ComputedWorkBlock, Expense, InvoiceData, Settings, WorkBlock } from '@/lib/types';
+import {
+  countWeekdaysInclusive,
+  isValidDateRange,
+  detectCurrencySymbol,
+  resolveFilename,
+  generateInvoicePdf,
+} from '@sainsw/invoice-pdf';
+import type { ComputedWorkBlock, Expense, InvoiceData, Settings, WorkBlock } from '@sainsw/invoice-pdf';
 
 const disablePdf = (blocks: ComputedWorkBlock[]) =>
   blocks.length === 0 || blocks.some((block) => block.hasError || block.days === 0);

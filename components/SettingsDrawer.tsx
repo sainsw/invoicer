@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CurrencyPicker, currencyOptions } from '@/components/CurrencyPicker';
-import { DEFAULT_FILENAME_TEMPLATE, defaultSettings, emptyExtraReference } from '@/lib/defaults';
-import { FILENAME_TOKENS } from '@/lib/filename';
-import { ExtraReference, Settings } from '@/lib/types';
+import { defaultSettings, emptyExtraReference } from '@/lib/defaults';
+import { DEFAULT_FILENAME_TEMPLATE, FILENAME_TOKENS } from '@sainsw/invoice-pdf';
+import type { ExtraReference, Settings } from '@sainsw/invoice-pdf';
 
 interface SettingsDrawerProps {
   open: boolean;

@@ -18,10 +18,10 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { formatHumanDate } from '@/lib/date';
+import { formatHumanDate } from '@sainsw/invoice-pdf';
 import { ReorderCallout } from '@/components/ReorderCallout';
 import { useReorderAnimation } from '@/hooks/useReorderAnimation';
-import { Expense } from '@/lib/types';
+import type { Expense } from '@sainsw/invoice-pdf';
 
 type Props = {
   expenses: Expense[];
