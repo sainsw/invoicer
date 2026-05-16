@@ -374,6 +374,24 @@ export default function HomePage() {
       dueDate,
       amount: totals.total,
       status: 'sent' as const,
+      notes: invoice.notes,
+      purchaseOrder: invoice.purchaseOrder,
+      taxRate: invoice.taxRate,
+      workBlocks: invoice.workBlocks.map((wb) => ({
+        id: wb.id,
+        description: wb.description,
+        startDate: wb.startDate,
+        endDate: wb.endDate,
+        billingMode: wb.billingMode,
+        dailyRate: wb.dailyRate,
+        blockTotal: wb.blockTotal,
+      })),
+      expenses: invoice.expenses.map((ex) => ({
+        id: ex.id,
+        date: ex.date,
+        notes: ex.notes,
+        amount: ex.value,
+      })),
     };
     const encoded = btoa(JSON.stringify(payload));
     setTrackingLink(`https://accounts.ainsworth.dev/invoices?import=${encoded}`);
