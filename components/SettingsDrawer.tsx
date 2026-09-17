@@ -20,6 +20,8 @@ interface SettingsDrawerProps {
   };
   reminderMessage?: string;
   resolveFilenamePreview: (template: string) => string;
+  currentNotes: string;
+  onApplyNotesToInvoice: () => void;
 }
 
 export const SettingsDrawer = ({
@@ -32,14 +34,18 @@ export const SettingsDrawer = ({
   buttonClasses,
   reminderMessage,
   resolveFilenamePreview,
+  currentNotes,
+  onApplyNotesToInvoice,
 }: SettingsDrawerProps) => {
   const [isVisible, setIsVisible] = useState(open);
   const [isClosing, setIsClosing] = useState(false);
+  const [notesTouched, setNotesTouched] = useState(false);
 
   useEffect(() => {
     if (open) {
       setIsVisible(true);
       setIsClosing(false);
+      setNotesTouched(false);
       return;
     }
     if (!isVisible) {
@@ -195,7 +201,32 @@ export const SettingsDrawer = ({
           {field('Bank / Payment Details', 'bankDetails', true)}
           {field('Header Background Color', 'headerColor')}
           {field('Body Background Color (below header)', 'bodyColor')}
-          {field('Default Notes Template', 'defaultNotes', true)}
+          <div className="space-y-1.5">
+            <label htmlFor="defaultNotes" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+              Default notes
+            </label>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Pre-fills the Notes field on new invoices. Plain text — no [tokens].
+            </p>
+            <textarea
+              id="defaultNotes"
+              className={`${fieldClass} min-h-[120px] overflow-x-auto`}
+              value={settings.defaultNotes || ''}
+              onChange={(event) => {
+                setNotesTouched(true);
+                handleInput('defaultNotes')(event);
+              }}
+            />
+            {notesTouched && settings.defaultNotes !== currentNotes && (
+              <button
+                type="button"
+                className={`${buttonClasses.secondary} w-full animate-fade-in`}
+                onClick={onApplyNotesToInvoice}
+              >
+                Apply to current invoice
+              </button>
+            )}
+          </div>
           <FilenameTemplateField
             value={settings.filenameTemplate ?? DEFAULT_FILENAME_TEMPLATE}
             onChange={(filenameTemplate) => onChange({ ...settings, filenameTemplate })}

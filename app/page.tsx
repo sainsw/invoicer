@@ -483,20 +483,21 @@ export default function HomePage() {
               <div className="relative">
                 <textarea
                   id="notes"
-                  className="w-full min-h-[120px] rounded-3xl border border-slate-200/80 bg-white/70 px-4 py-3 text-sm text-slate-900 shadow-sm shadow-slate-900/5 transition hover:border-slate-300 focus:border-brand-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:shadow-black/20 dark:hover:border-slate-700 dark:focus:bg-slate-900"
+                  className="w-full min-h-[120px] rounded-3xl border border-slate-200/80 bg-white/70 px-4 py-3 pb-16 text-sm text-slate-900 shadow-sm shadow-slate-900/5 transition hover:border-slate-300 focus:border-brand-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:shadow-black/20 dark:hover:border-slate-700 dark:focus:bg-slate-900"
                   value={invoice.notes}
                   onChange={(event) => updateInvoice({ notes: event.target.value })}
                   placeholder="Purchase orders, payment expectations, or a short thank-you message."
                   rows={4}
                 />
-                <button
-                  type="button"
-                  className={`${iconButton} absolute bottom-3 right-3 h-10 w-10 rounded-full`}
-                  onClick={() => updateInvoice({ notes: settings.defaultNotes })}
-                  aria-label="Apply notes template"
-                >
-                  🔄
-                </button>
+                {invoice.notes !== settings.defaultNotes && (
+                  <button
+                    type="button"
+                    className={`${buttonBase} animate-fade-in absolute bottom-3 right-3 bg-slate-100 text-slate-900 ring-1 ring-slate-300 shadow-sm hover:bg-slate-200 hover:ring-slate-400 dark:bg-slate-800 dark:text-white dark:ring-slate-600 dark:hover:bg-slate-700`}
+                    onClick={() => updateInvoice({ notes: settings.defaultNotes })}
+                  >
+                    Reset to default notes
+                  </button>
+                )}
               </div>
             </div>
           </section>
@@ -551,6 +552,8 @@ export default function HomePage() {
             : undefined
         }
         resolveFilenamePreview={(template) => resolveFilename(template, { settings, invoice, totals })}
+        currentNotes={invoice.notes}
+        onApplyNotesToInvoice={() => updateInvoice({ notes: settings.defaultNotes })}
       />
 
     </main>
