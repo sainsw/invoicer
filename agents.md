@@ -62,7 +62,7 @@ Number of working days in the block.
 Line total = working days × daily rate.
 F-8: Working days definition:
 Monday–Friday only.
-Weekends excluded.
+Weekends excluded, unless the whole block falls on a weekend (then all days count).
 Public/bank holidays ignored for v1.
 F-9: User can delete a work block.
 (Optional nice-to-have: duplicate / copy a block.)

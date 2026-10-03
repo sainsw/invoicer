@@ -23,6 +23,17 @@ import {
 } from '@sainsw/invoice-pdf';
 import type { ComputedWorkBlock, Expense, InvoiceData, Settings, WorkBlock } from '@sainsw/invoice-pdf';
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// Weekdays only, unless the whole range falls on a weekend — then every day counts.
+const countWorkingDays = (startDate: string, endDate: string) => {
+  const weekdays = countWeekdaysInclusive(startDate, endDate);
+  if (weekdays > 0) return weekdays;
+  const start = Date.parse(`${startDate}T00:00:00Z`);
+  const end = Date.parse(`${endDate}T00:00:00Z`);
+  return Math.round((end - start) / DAY_MS) + 1;
+};
+
 const disablePdf = (blocks: ComputedWorkBlock[]) =>
   blocks.length === 0 || blocks.some((block) => block.hasError || block.days === 0);
 
@@ -58,7 +69,7 @@ export default function HomePage() {
     () =>
       invoice.workBlocks.map((block) => {
         const validRange = isValidDateRange(block.startDate, block.endDate);
-        const days = validRange ? countWeekdaysInclusive(block.startDate, block.endDate) : 0;
+        const days = validRange ? countWorkingDays(block.startDate, block.endDate) : 0;
         const dailyRate = Math.max(0, block.dailyRate || 0);
         const lineTotal = Number((days * dailyRate).toFixed(2));
         const blockTotal = block.billingMode === 'block'
@@ -200,7 +211,7 @@ export default function HomePage() {
 
         const next = { ...block, ...patch };
         const validRange = isValidDateRange(next.startDate, next.endDate);
-        const days = validRange ? countWeekdaysInclusive(next.startDate, next.endDate) : 0;
+        const days = validRange ? countWorkingDays(next.startDate, next.endDate) : 0;
         const isDailyEdit = Object.prototype.hasOwnProperty.call(patch, 'dailyRate')
           && !Object.prototype.hasOwnProperty.call(patch, 'blockTotal');
         const isBlockEdit = Object.prototype.hasOwnProperty.call(patch, 'blockTotal')
@@ -435,7 +446,7 @@ export default function HomePage() {
                 </button>
               </div>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Only Monday–Friday days count towards totals. Weekends are skipped automatically.
+                Only Monday–Friday days count towards totals. Weekends are skipped, unless a block is entirely on a weekend.
               </p>
             </div>
 
