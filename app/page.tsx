@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
+import { ClientChips } from '@/components/ClientChips';
 import { ExpensesTable } from '@/components/ExpensesTable';
 import { SettingsDrawer } from '@/components/SettingsDrawer';
 import { WorkBlocksTable } from '@/components/WorkBlocksTable';
@@ -14,6 +16,14 @@ import {
   INVOICE_KEY,
   SETTINGS_KEY,
 } from '@/lib/defaults';
+import {
+  CLIENTS_KEY,
+  defaultClientsState,
+  firstDailyRate,
+  invoiceForClient,
+  profileDiffers,
+  profileFromInvoice,
+} from '@/lib/clients';
 import {
   countWeekdaysInclusive,
   isValidDateRange,
@@ -65,6 +75,15 @@ export default function HomePage() {
     ready: invoiceReady,
   } = usePersistentState(INVOICE_KEY, () => defaultInvoice(settings));
 
+  const {
+    value: clientsState,
+    setValue: setClientsState,
+    ready: clientsReady,
+  } = usePersistentState(CLIENTS_KEY, defaultClientsState);
+
+  const activeClient = clientsState.clients.find((client) => client.id === clientsState.activeId) ?? null;
+  const activeClientDirty = activeClient ? profileDiffers(activeClient, invoice) : false;
+
   const computedBlocks = useMemo<ComputedWorkBlock[]>(
     () =>
       invoice.workBlocks.map((block) => {
@@ -112,7 +131,25 @@ export default function HomePage() {
     return keys.every((key) => normalize(settings[key]) === normalize(defaults[key]));
   }, [settings]);
 
-  const ready = settingsReady && invoiceReady;
+  const ready = settingsReady && invoiceReady && clientsReady;
+
+  // Keep the active client's draft in sync so switching back restores it.
+  useEffect(() => {
+    if (!invoiceReady || !clientsReady) {
+      return;
+    }
+    setClientsState((prev) => {
+      if (!prev.activeId) {
+        return prev;
+      }
+      return {
+        ...prev,
+        clients: prev.clients.map((client) =>
+          client.id === prev.activeId ? { ...client, lastInvoice: invoice } : client
+        ),
+      };
+    });
+  }, [clientsReady, invoice, invoiceReady, setClientsState]);
 
   useEffect(() => {
     if (!settingsReady || hasStoredSettings) {
@@ -257,7 +294,10 @@ export default function HomePage() {
   const addWorkBlock = () => {
     setInvoice((prev) => ({
       ...prev,
-      workBlocks: [...prev.workBlocks, emptyWorkBlock(settings.defaultDailyRate || 0, prev.invoiceMonth)],
+      workBlocks: [
+        ...prev.workBlocks,
+        emptyWorkBlock(activeClient?.dailyRate ?? (settings.defaultDailyRate || 0), prev.invoiceMonth),
+      ],
     }));
   };
 
@@ -336,6 +376,43 @@ export default function HomePage() {
     });
   };
 
+  const selectClient = (id: string) => {
+    const target = clientsState.clients.find((client) => client.id === id);
+    if (!target) {
+      return;
+    }
+    setInvoice(invoiceForClient(target, defaultInvoice(settings)));
+    setClientsState((prev) => ({ ...prev, activeId: id }));
+  };
+
+  const startNewClient = () => {
+    setClientsState((prev) => ({ ...prev, activeId: null }));
+    setInvoice({ ...defaultInvoice(settings), clientName: '' });
+  };
+
+  const saveAsClient = (label: string) => {
+    const profile = profileFromInvoice(invoice, label, settings.defaultDailyRate || 0);
+    setClientsState((prev) => ({ activeId: profile.id, clients: [...prev.clients, profile] }));
+  };
+
+  const updateActiveClient = () => {
+    if (!activeClient) {
+      return;
+    }
+    const updated = profileFromInvoice(invoice, activeClient.label, activeClient.dailyRate, activeClient.id);
+    setClientsState((prev) => ({
+      ...prev,
+      clients: prev.clients.map((client) => (client.id === updated.id ? updated : client)),
+    }));
+  };
+
+  const deleteClient = (id: string) => {
+    setClientsState((prev) => ({
+      activeId: prev.activeId === id ? null : prev.activeId,
+      clients: prev.clients.filter((client) => client.id !== id),
+    }));
+  };
+
   const resetSettingsToDefaults = () => {
     setSettings(localeDefaultSettings());
   };
@@ -345,9 +422,11 @@ export default function HomePage() {
     setSettings(defaults);
     const invoiceDefaults = defaultInvoice(defaults);
     setInvoice(invoiceDefaults);
+    setClientsState(defaultClientsState());
     if (typeof window !== 'undefined') {
       window.localStorage.removeItem(SETTINGS_KEY);
       window.localStorage.removeItem(INVOICE_KEY);
+      window.localStorage.removeItem(CLIENTS_KEY);
     }
     setSettingsOpen(false);
   };
@@ -369,6 +448,17 @@ export default function HomePage() {
       return;
     }
     generateInvoicePdf({ settings, invoice, lineItems: computedBlocks, totals });
+
+    // Remember the rate actually billed so the client's next invoice starts from it.
+    if (activeClient) {
+      const billedRate = firstDailyRate(invoice, activeClient.dailyRate);
+      setClientsState((prev) => ({
+        ...prev,
+        clients: prev.clients.map((client) =>
+          client.id === activeClient.id ? { ...client, dailyRate: billedRate } : client
+        ),
+      }));
+    }
 
     // Build "Track in Accounts" link
     const dueDate = invoice.issueDate
@@ -436,7 +526,24 @@ export default function HomePage() {
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           <section className={`${cardClass} space-y-8`}>
-            <MetadataForm invoice={invoice} onChange={updateInvoice} />
+            <MetadataForm
+              invoice={invoice}
+              onChange={updateInvoice}
+              clientPicker={
+                <ClientChips
+                  clients={clientsState.clients}
+                  activeId={clientsState.activeId}
+                  suggestedName={invoice.clientName.trim()}
+                  isDirty={activeClientDirty}
+                  hasUnsavedDraft={!activeClient && Boolean(invoice.clientName.trim() || invoice.invoiceNumber.trim())}
+                  onSelect={selectClient}
+                  onNew={startNewClient}
+                  onSave={saveAsClient}
+                  onUpdate={updateActiveClient}
+                  onDelete={deleteClient}
+                />
+              }
+            />
 
             <div className="space-y-3">
               <div className="flex items-center justify-between gap-4">
@@ -601,9 +708,11 @@ export default function HomePage() {
 function MetadataForm({
   invoice,
   onChange,
+  clientPicker,
 }: {
   invoice: InvoiceData;
   onChange: (patch: Partial<InvoiceData>) => void;
+  clientPicker: ReactNode;
 }) {
   const fieldClass =
     'w-full min-w-0 rounded-2xl border border-slate-200/80 bg-white/70 px-4 py-3 text-sm text-slate-900 shadow-sm shadow-slate-900/5 transition hover:border-slate-300 focus:border-brand-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-200 placeholder:text-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:shadow-black/20 dark:hover:border-slate-700 dark:focus:bg-slate-900';
@@ -688,6 +797,7 @@ function MetadataForm({
             value={invoice.clientName}
             onChange={(event) => onChange({ clientName: event.target.value })}
           />
+          <div className="pt-2">{clientPicker}</div>
         </div>
         <div className="space-y-1.5">
           <label htmlFor="clientAddress" className="text-sm font-semibold text-slate-700 dark:text-slate-200">

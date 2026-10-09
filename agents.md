@@ -170,7 +170,6 @@ simpleInvoice.settings
 simpleInvoice.lastInvoice (if you want to restore last invoice content).
 7. Out of Scope for v1
 Automatic invoice number sequencing.
-Client library / multiple saved clients.
 Export/import of invoices or settings.
 Authentication, user accounts, or syncing across devices.
 Multi-currency support.
