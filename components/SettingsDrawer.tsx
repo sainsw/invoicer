@@ -40,6 +40,57 @@ export const SettingsDrawer = ({
   const [isVisible, setIsVisible] = useState(open);
   const [isClosing, setIsClosing] = useState(false);
   const [notesTouched, setNotesTouched] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  // Modal keyboard behaviour: focus moves into the panel, Tab stays inside it, Escape closes,
+  // and focus returns to whatever opened the drawer.
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    panelRef.current?.focus();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+      if (event.key !== 'Tab' || !panelRef.current) {
+        return;
+      }
+      const focusable = Array.from(
+        panelRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      );
+      if (focusable.length === 0) {
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      const outside = !panelRef.current.contains(active);
+      if (event.shiftKey && (active === first || active === panelRef.current || outside)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (active === last || outside)) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      opener?.focus();
+    };
+  }, [open]);
 
   useEffect(() => {
     if (open) {
@@ -142,17 +193,20 @@ export const SettingsDrawer = ({
   return (
     <div
       className={`fixed inset-0 z-20 flex justify-end bg-slate-900/50 backdrop-blur-sm ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`}
-      role="dialog"
-      aria-modal="true"
       onClick={onClose}
       >
         <div
-          className={`h-full w-full max-w-md overflow-y-auto bg-white px-6 py-8 shadow-2xl shadow-slate-900/30 transition-colors ${isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'} sm:px-8 dark:bg-slate-950 dark:shadow-black/50`}
+          ref={panelRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="settings-heading"
+          tabIndex={-1}
+          className={`h-full w-full max-w-md overflow-y-auto bg-white px-6 py-8 shadow-2xl shadow-slate-900/30 transition-colors focus:outline-none ${isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'} sm:px-8 dark:bg-slate-950 dark:shadow-black/50`}
           onClick={(event) => event.stopPropagation()}
         >
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">Settings</h2>
+            <h2 id="settings-heading" className="text-2xl font-semibold text-slate-900 dark:text-white">Settings</h2>
             <p className="text-sm text-slate-500 dark:text-slate-400">Stored locally in your browser</p>
           </div>
           <button className={buttonClasses.ghost} onClick={onClose}>

@@ -9,6 +9,8 @@ type Props = {
   canMoveDown: boolean;
   onMoveUp: () => void;
   onMoveDown: () => void;
+  onDuplicate?: () => void;
+  onRemove?: () => void;
   onClose: () => void;
   toggleRef: RefObject<HTMLElement | null>;
   placement: Placement;
@@ -24,11 +26,19 @@ const placementClass: Record<Placement, string> = {
 const itemClass =
   'flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent dark:text-slate-200 dark:hover:bg-slate-800';
 
+const dangerItemClass = itemClass
+  .replace('text-slate-700', 'text-rose-600')
+  .replace('hover:bg-slate-100', 'hover:bg-rose-50')
+  .replace('dark:text-slate-200', 'dark:text-rose-300')
+  .replace('dark:hover:bg-slate-800', 'dark:hover:bg-rose-950/40');
+
 export const ReorderCallout = ({
   canMoveUp,
   canMoveDown,
   onMoveUp,
   onMoveDown,
+  onDuplicate,
+  onRemove,
   onClose,
   toggleRef,
   placement,
@@ -58,7 +68,7 @@ export const ReorderCallout = ({
     <div
       ref={ref}
       role="menu"
-      aria-label="Reorder options"
+      aria-label="Row options"
       className={`absolute z-30 flex w-40 flex-col gap-1 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl ring-1 ring-black/5 dark:border-slate-800 dark:bg-slate-900 ${placementClass[placement]}`}
     >
       <button
@@ -81,6 +91,26 @@ export const ReorderCallout = ({
         <span aria-hidden>↓</span>
         Move down
       </button>
+      {(onDuplicate || onRemove) && (
+        <div role="separator" className="my-0.5 h-px bg-slate-100 dark:bg-slate-800" />
+      )}
+      {onDuplicate && (
+        <button type="button" role="menuitem" onClick={onDuplicate} className={itemClass}>
+          <span aria-hidden>⧉</span>
+          Duplicate
+        </button>
+      )}
+      {onRemove && (
+        <button
+          type="button"
+          role="menuitem"
+          onClick={onRemove}
+          className={dangerItemClass}
+        >
+          <span aria-hidden>✕</span>
+          Remove
+        </button>
+      )}
     </div>
   );
 };

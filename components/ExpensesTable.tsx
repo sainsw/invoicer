@@ -1,6 +1,6 @@
 'use client';
 
-import { CSSProperties, useRef, useState } from 'react';
+import { CSSProperties, useId, useRef, useState } from 'react';
 import {
   DndContext,
   DragEndEvent,
@@ -20,6 +20,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { formatHumanDate } from '@sainsw/invoice-pdf';
 import { ReorderCallout } from '@/components/ReorderCallout';
+import { formatMoney } from '@/lib/format';
 import { useReorderAnimation } from '@/hooks/useReorderAnimation';
 import type { Expense } from '@sainsw/invoice-pdf';
 
@@ -52,10 +53,16 @@ const tableInputClass =
 const dragHandleClass =
   'inline-flex h-8 w-8 cursor-grab touch-none items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 active:cursor-grabbing focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-100';
 
-// Desktop grid: drag handle is now the LAST column, after the actions stack.
+// Desktop cells are narrow, so trim the horizontal padding (date inputs need ~118px at px-2.5).
+const desktopInputClass = tableInputClass.replace('px-3.5', 'px-2.5');
+
+// Desktop grid: date, notes, value, options/drag handle. 400px of columns + 3 gaps of 6px + px-2 → 434px.
 const desktopGridClass =
-  'grid grid-cols-[180px_minmax(220px,1fr)_160px_110px_40px] items-start gap-x-2';
-const desktopMinWidthClass = 'min-w-[760px]';
+  'grid grid-cols-[124px_minmax(140px,1fr)_104px_32px] items-start gap-x-1.5';
+const desktopMinWidthClass = 'min-w-[434px]';
+// Same breakpoint as WorkBlocksTable so both lists switch layout together.
+const tableViewClass = 'hidden [@container(min-width:796px)]:block';
+const cardViewClass = 'space-y-4 [@container(min-width:796px)]:hidden';
 
 const GripIcon = () => (
   <svg
@@ -125,48 +132,40 @@ const SortableDesktopRow = ({
       role="row"
       className={`${desktopGridClass} ${desktopMinWidthClass} px-2 py-3 ${isLast ? '' : 'border-b border-slate-100 dark:border-slate-800'}`}
     >
-      <div role="cell" className="px-3 text-slate-600 dark:text-slate-300">
+      <div role="cell" className="text-slate-600 dark:text-slate-300">
         <input
           type="date"
-          className={tableInputClass}
+          className={desktopInputClass}
           value={expense.date}
           onChange={(event) => onExpenseChange(expense.id, { date: event.target.value })}
         />
         <small className="mt-1 block text-xs text-slate-400 dark:text-slate-500">{safeDate(expense.date)}</small>
       </div>
-      <div role="cell" className="px-3 min-w-0">
+      <div role="cell" className="min-w-0">
         <input
           type="text"
-          className={tableInputClass}
+          className={desktopInputClass}
           value={expense.notes}
           onChange={(event) => onExpenseChange(expense.id, { notes: event.target.value })}
           placeholder="e.g. Travel to client site"
         />
       </div>
-      <div role="cell" className="px-3">
+      <div role="cell">
         <input
           type="number"
           min={0}
-          className={tableInputClass}
+          className={`${desktopInputClass} text-right`}
           value={expense.value}
           onChange={(event) => onExpenseChange(expense.id, { value: Number(event.target.value) || 0 })}
         />
-      </div>
-      <div role="cell" className="px-3 pt-1">
-        <button
-          type="button"
-          className="inline-flex items-center justify-center rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-600 transition hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-200 dark:hover:bg-rose-900/50"
-          onClick={() => onRemove(expense.id)}
-        >
-          Remove
-        </button>
       </div>
       <div role="cell" className="relative flex items-start justify-center pt-1.5">
         <button
           ref={toggleRef}
           type="button"
           className={dragHandleClass}
-          aria-label="Drag to reorder, or click for move options"
+          aria-label="Row options: remove or move. Drag to reorder."
+          title="Click for options · drag to reorder"
           aria-haspopup="menu"
           aria-expanded={isOpen}
           onClick={() => setOpenMenuId(isOpen ? null : expense.id)}
@@ -181,6 +180,7 @@ const SortableDesktopRow = ({
             canMoveDown={index < total - 1}
             onMoveUp={() => { onMoveUp(expense.id); setOpenMenuId(null); }}
             onMoveDown={() => { onMoveDown(expense.id); setOpenMenuId(null); }}
+            onRemove={() => { onRemove(expense.id); setOpenMenuId(null); }}
             onClose={() => setOpenMenuId(null)}
             toggleRef={toggleRef}
             placement="desktop"
@@ -295,10 +295,7 @@ const SortableCard = ({
       </div>
       <div className="flex items-center justify-between rounded-xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-900 dark:bg-slate-900 dark:text-white">
         <span>Amount</span>
-        <span>
-          {currencySymbol}
-          {expense.value.toFixed(2)}
-        </span>
+        <span className="tabular-nums">{formatMoney(currencySymbol, expense.value)}</span>
       </div>
       <button
         type="button"
@@ -354,11 +351,15 @@ const DesktopView = ({
     arm();
     onMoveDown(id);
   };
-  const headerCellClass = 'px-3 py-3 text-left';
+  const headerCellClass = 'py-3 text-left';
+  const dndId = useId();
 
   return (
-    <div className="hidden overflow-x-auto rounded-3xl border border-slate-200/80 bg-white shadow-md shadow-slate-900/5 transition-colors md:block dark:border-slate-800 dark:bg-slate-950 dark:shadow-none">
+    // No overflow clipping: the grid always fits (see tableViewClass), and the row menu must be able to
+    // extend past the table's bottom edge. Header and body round their own corners instead.
+    <div className={`${tableViewClass} rounded-3xl border border-slate-200/80 bg-white shadow-md shadow-slate-900/5 transition-colors dark:border-slate-800 dark:bg-slate-950 dark:shadow-none`}>
       <DndContext
+        id={dndId}
         sensors={sensors}
         collisionDetection={closestCenterExcludingActive}
         onDragStart={() => setOpenMenuId(null)}
@@ -368,7 +369,7 @@ const DesktopView = ({
           <div role="table" className="text-sm">
             <div
               role="row"
-              className={`${desktopGridClass} ${desktopMinWidthClass} bg-slate-50 px-2 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:bg-slate-900 dark:text-slate-300`}
+              className={`${desktopGridClass} ${desktopMinWidthClass} rounded-t-3xl bg-slate-50 px-2 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:bg-slate-900 dark:text-slate-300`}
             >
               <div role="columnheader" className={headerCellClass}>
                 Date
@@ -376,13 +377,12 @@ const DesktopView = ({
               <div role="columnheader" className={headerCellClass}>
                 Notes
               </div>
-              <div role="columnheader" className={headerCellClass}>
+              <div role="columnheader" className="py-3 text-right">
                 Value
               </div>
-              <div role="columnheader" className="px-3 py-3" aria-label="Actions" />
-              <div role="columnheader" className="px-3 py-3" aria-label="Reorder" />
+              <div role="columnheader" className="py-3" aria-label="Row options" />
             </div>
-            <div role="rowgroup" className="bg-white dark:bg-slate-950">
+            <div role="rowgroup" className="rounded-b-3xl bg-white dark:bg-slate-950">
               {expenses.map((expense, index) => (
                 <SortableDesktopRow
                   key={expense.id}
@@ -430,9 +430,12 @@ const MobileView = ({
     onMoveDown(id);
   };
 
+  const dndId = useId();
+
   return (
-    <div className="space-y-4 md:hidden">
+    <div className={cardViewClass}>
       <DndContext
+        id={dndId}
         sensors={sensors}
         collisionDetection={closestCenterExcludingActive}
         onDragStart={() => setOpenMenuId(null)}
@@ -482,7 +485,7 @@ export const ExpensesTable = (props: Props) => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 [container-type:inline-size]">
       <DesktopView {...viewProps} />
       <MobileView {...viewProps} />
     </div>

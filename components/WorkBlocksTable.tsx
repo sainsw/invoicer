@@ -1,6 +1,6 @@
 'use client';
 
-import { CSSProperties, useRef, useState } from 'react';
+import { CSSProperties, useId, useRef, useState } from 'react';
 import {
   DndContext,
   DragEndEvent,
@@ -20,6 +20,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { formatHumanDate } from '@sainsw/invoice-pdf';
 import { ReorderCallout } from '@/components/ReorderCallout';
+import { formatMoney } from '@/lib/format';
 import { useReorderAnimation } from '@/hooks/useReorderAnimation';
 import type { ComputedWorkBlock, WorkBlock } from '@sainsw/invoice-pdf';
 
@@ -49,17 +50,24 @@ type RowExtras = {
 
 const tableInputClass =
   'w-full rounded-2xl border border-slate-200/80 bg-white/70 px-3.5 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-900/5 transition hover:border-slate-300 focus:border-brand-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-200 placeholder:text-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:shadow-black/20 dark:hover:border-slate-700 dark:focus:bg-slate-900';
-const descriptionInputClass = `${tableInputClass} min-w-0`;
-const rateInputClass = `${tableInputClass} text-right`;
+// Desktop cells are narrow, so trim the horizontal padding (date inputs need ~118px at px-2.5).
+const desktopInputClass = tableInputClass.replace('px-3.5', 'px-2.5');
+const descriptionInputClass = `${desktopInputClass} min-w-0`;
+const rateInputClass = `${desktopInputClass} text-right`;
 
 const dragHandleClass =
   'inline-flex h-8 w-8 cursor-grab touch-none items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 active:cursor-grabbing focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-100';
 
-// Desktop grid: drag handle is now the LAST column, after the actions stack.
+// Desktop grid: description, start, end, days, daily rate, block total, line total, options/drag handle.
+// Columns total 736px + 7 gaps of 6px = 778px, plus px-2 row padding → 794px rows, 796px with the
+// table border. The table only shows once its container is that wide (see TABLE_MIN_CONTAINER below);
+// narrower containers get the card layout, so the table never needs to scroll sideways.
 const desktopGridClass =
-  'grid grid-cols-[minmax(220px,1fr)_140px_140px_60px_130px_130px_110px_110px_40px] items-start gap-x-2';
-// 9 columns total 1080px; 8 gaps of gap-x-2 (8px) add 64px → 1200px is the row's intrinsic min size.
-const desktopMinWidthClass = 'min-w-[1200px]';
+  'grid grid-cols-[minmax(140px,1fr)_124px_124px_40px_88px_96px_92px_32px] items-start gap-x-1.5';
+const desktopMinWidthClass = 'min-w-[794px]';
+// Keep in sync with ExpensesTable so both lists switch layout together.
+const tableViewClass = 'hidden [@container(min-width:796px)]:block';
+const cardViewClass = 'space-y-4 [@container(min-width:796px)]:hidden';
 
 const GripIcon = () => (
   <svg
@@ -133,7 +141,7 @@ const SortableDesktopRow = ({
       role="row"
       className={`${desktopGridClass} ${desktopMinWidthClass} px-2 py-3 ${isLast ? '' : 'border-b border-slate-100 dark:border-slate-800'}`}
     >
-      <div role="cell" className="px-3 min-w-0">
+      <div role="cell" className="min-w-0">
         <input
           type="text"
           className={descriptionInputClass}
@@ -147,28 +155,28 @@ const SortableDesktopRow = ({
           </p>
         )}
       </div>
-      <div role="cell" className="px-3 text-slate-600 dark:text-slate-300">
+      <div role="cell" className="text-slate-600 dark:text-slate-300">
         <input
           type="date"
-          className={tableInputClass}
+          className={desktopInputClass}
           value={block.startDate}
           onChange={(event) => onBlockChange(block.id, { startDate: event.target.value })}
         />
         <small className="mt-1 block text-xs text-slate-400 dark:text-slate-500">{safeDate(block.startDate)}</small>
       </div>
-      <div role="cell" className="px-3 text-slate-600 dark:text-slate-300">
+      <div role="cell" className="text-slate-600 dark:text-slate-300">
         <input
           type="date"
-          className={tableInputClass}
+          className={desktopInputClass}
           value={block.endDate}
           onChange={(event) => onBlockChange(block.id, { endDate: event.target.value })}
         />
         <small className="mt-1 block text-xs text-slate-400 dark:text-slate-500">{safeDate(block.endDate)}</small>
       </div>
-      <div role="cell" className="px-3 pt-3 font-semibold text-slate-900 dark:text-white">
+      <div role="cell" className="pt-2.5 text-center font-semibold tabular-nums text-slate-900 dark:text-white">
         {block.days}
       </div>
-      <div role="cell" className="px-3">
+      <div role="cell">
         <input
           type="number"
           min={0}
@@ -177,7 +185,7 @@ const SortableDesktopRow = ({
           onChange={(event) => onBlockChange(block.id, { dailyRate: Number(event.target.value) || 0 })}
         />
       </div>
-      <div role="cell" className="px-3">
+      <div role="cell">
         <input
           type="number"
           min={0}
@@ -186,34 +194,16 @@ const SortableDesktopRow = ({
           onChange={(event) => onBlockChange(block.id, { blockTotal: Number(event.target.value) || 0 })}
         />
       </div>
-      <div role="cell" className="px-3 pt-3 font-semibold text-slate-900 dark:text-white">
-        {currencySymbol}
-        {block.lineTotal.toFixed(2)}
-      </div>
-      <div role="cell" className="px-3">
-        <div className="flex flex-col gap-2 text-xs font-semibold text-slate-500">
-          <button
-            type="button"
-            className="inline-flex items-center justify-center rounded-full bg-brand-50 px-3 py-1 text-brand-700 transition hover:bg-brand-100 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
-            onClick={() => onDuplicate(block.id)}
-          >
-            Duplicate
-          </button>
-          <button
-            type="button"
-            className="inline-flex items-center justify-center rounded-full bg-rose-50 px-3 py-1 text-rose-600 transition hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-200 dark:hover:bg-rose-900/50"
-            onClick={() => onRemove(block.id)}
-          >
-            Remove
-          </button>
-        </div>
+      <div role="cell" className="pt-2.5 text-right font-semibold tabular-nums text-slate-900 dark:text-white">
+        {formatMoney(currencySymbol, block.lineTotal)}
       </div>
       <div role="cell" className="relative flex items-start justify-center pt-1.5">
         <button
           ref={toggleRef}
           type="button"
           className={dragHandleClass}
-          aria-label="Drag to reorder, or click for move options"
+          aria-label="Row options: duplicate, remove, or move. Drag to reorder."
+          title="Click for options · drag to reorder"
           aria-haspopup="menu"
           aria-expanded={isOpen}
           onClick={() => setOpenMenuId(isOpen ? null : block.id)}
@@ -228,6 +218,8 @@ const SortableDesktopRow = ({
             canMoveDown={index < total - 1}
             onMoveUp={() => { onMoveUp(block.id); setOpenMenuId(null); }}
             onMoveDown={() => { onMoveDown(block.id); setOpenMenuId(null); }}
+            onDuplicate={() => { onDuplicate(block.id); setOpenMenuId(null); }}
+            onRemove={() => { onRemove(block.id); setOpenMenuId(null); }}
             onClose={() => setOpenMenuId(null)}
             toggleRef={toggleRef}
             placement="desktop"
@@ -367,24 +359,20 @@ const SortableCard = ({
             min={0}
             className={tableInputClass}
             value={block.blockTotal}
-            disabled={block.billingMode === 'daily'}
             onChange={(event) => onBlockChange(block.id, { blockTotal: Number(event.target.value) || 0 })}
           />
         </div>
         <div className="space-y-1.5">
           <label className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Days</label>
-          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-white">
-            {block.days}
-          </div>
+          <p className="py-2 text-sm font-semibold tabular-nums text-slate-900 dark:text-white">
+            {block.days} {block.days === 1 ? 'day' : 'days'}
+          </p>
         </div>
       </div>
 
       <div className="flex items-center justify-between rounded-xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-900 dark:bg-slate-900 dark:text-white">
         <span>Total</span>
-        <span>
-          {currencySymbol}
-          {block.lineTotal.toFixed(2)}
-        </span>
+        <span className="tabular-nums">{formatMoney(currencySymbol, block.lineTotal)}</span>
       </div>
 
       <div className="flex flex-wrap gap-3 text-sm font-semibold">
@@ -443,7 +431,9 @@ const DesktopView = ({
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const { arm, registerRef } = useReorderAnimation();
   const ids = blocks.map((block) => block.id);
-  const headerCellClass = 'px-3 py-3 text-left';
+  const dndId = useId();
+  const headerCellClass = 'py-3 text-left';
+  const numericHeaderCellClass = 'py-3 text-right';
 
   const armedMoveUp = (id: string) => {
     arm();
@@ -455,8 +445,11 @@ const DesktopView = ({
   };
 
   return (
-    <div className="hidden overflow-x-auto rounded-3xl border border-slate-200/80 bg-white shadow-md shadow-slate-900/5 transition-colors md:block dark:border-slate-800 dark:bg-slate-950 dark:shadow-none">
+    // No overflow clipping: the grid always fits (see tableViewClass), and the row menu must be able to
+    // extend past the table's bottom edge. Header and body round their own corners instead.
+    <div className={`${tableViewClass} rounded-3xl border border-slate-200/80 bg-white shadow-md shadow-slate-900/5 transition-colors dark:border-slate-800 dark:bg-slate-950 dark:shadow-none`}>
       <DndContext
+        id={dndId}
         sensors={sensors}
         collisionDetection={closestCenterExcludingActive}
         onDragStart={() => setOpenMenuId(null)}
@@ -466,7 +459,7 @@ const DesktopView = ({
           <div role="table" className="text-sm">
             <div
               role="row"
-              className={`${desktopGridClass} ${desktopMinWidthClass} bg-slate-50 px-2 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:bg-slate-900 dark:text-slate-300`}
+              className={`${desktopGridClass} ${desktopMinWidthClass} rounded-t-3xl bg-slate-50 px-2 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:bg-slate-900 dark:text-slate-300`}
             >
               <div role="columnheader" className={headerCellClass}>
                 Description
@@ -477,22 +470,21 @@ const DesktopView = ({
               <div role="columnheader" className={headerCellClass}>
                 End
               </div>
-              <div role="columnheader" className={headerCellClass}>
+              <div role="columnheader" className="py-3 text-center">
                 Days
               </div>
-              <div role="columnheader" className={headerCellClass}>
+              <div role="columnheader" className={numericHeaderCellClass}>
                 Daily rate
               </div>
-              <div role="columnheader" className={headerCellClass}>
+              <div role="columnheader" className={numericHeaderCellClass}>
                 Block total
               </div>
-              <div role="columnheader" className={headerCellClass}>
+              <div role="columnheader" className={numericHeaderCellClass}>
                 Total
               </div>
-              <div role="columnheader" className="px-3 py-3" aria-label="Actions" />
-              <div role="columnheader" className="px-3 py-3" aria-label="Reorder" />
+              <div role="columnheader" className="py-3" aria-label="Row options" />
             </div>
-            <div role="rowgroup" className="bg-white dark:bg-slate-950">
+            <div role="rowgroup" className="rounded-b-3xl bg-white dark:bg-slate-950">
               {blocks.map((block, index) => (
                 <SortableDesktopRow
                   key={block.id}
@@ -533,6 +525,7 @@ const MobileView = ({
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const { arm, registerRef } = useReorderAnimation();
   const ids = blocks.map((block) => block.id);
+  const dndId = useId();
 
   const armedMoveUp = (id: string) => {
     arm();
@@ -544,8 +537,9 @@ const MobileView = ({
   };
 
   return (
-    <div className="space-y-4 md:hidden">
+    <div className={cardViewClass}>
       <DndContext
+        id={dndId}
         sensors={sensors}
         collisionDetection={closestCenterExcludingActive}
         onDragStart={() => setOpenMenuId(null)}
@@ -592,7 +586,7 @@ export const WorkBlocksTable = (props: Props) => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 [container-type:inline-size]">
       <DesktopView {...viewProps} />
       <MobileView {...viewProps} />
     </div>

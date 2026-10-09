@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ClientChips } from '@/components/ClientChips';
 import { ExpensesTable } from '@/components/ExpensesTable';
 import { SettingsDrawer } from '@/components/SettingsDrawer';
 import { WorkBlocksTable } from '@/components/WorkBlocksTable';
 import { usePersistentState } from '@/hooks/usePersistentState';
+import { formatMoney } from '@/lib/format';
 import {
   createWorkBlockId,
   defaultInvoice,
@@ -54,13 +55,25 @@ const buttonBase =
 const buttonPrimary = `${buttonBase} bg-slate-900 text-white shadow-lg shadow-slate-900/10 ring-1 ring-slate-900 hover:-translate-y-0.5 hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:ring-white/70 dark:shadow-white/10 dark:hover:-translate-y-0.5 dark:hover:bg-slate-100`;
 const buttonSecondary = `${buttonBase} bg-white text-slate-900 ring-1 ring-slate-300 shadow-sm hover:-translate-y-0.5 hover:ring-slate-400 dark:bg-slate-900 dark:text-white dark:ring-slate-700`;
 const buttonGhost = `${buttonBase} bg-transparent text-slate-700 ring-1 ring-transparent hover:-translate-y-0.5 hover:ring-slate-200 dark:text-slate-200 dark:hover:ring-slate-700`;
-const iconButton =
-  'inline-flex h-11 w-11 items-center justify-center rounded-xl ring-1 ring-slate-200 text-base font-semibold text-slate-700 shadow-sm transition duration-150 hover:-translate-y-0.5 hover:bg-slate-100 hover:ring-slate-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 dark:ring-slate-700 dark:text-slate-100 dark:hover:bg-slate-800 dark:hover:ring-slate-600';
+
+const GearIcon = () => (
+  <svg aria-hidden className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"
+    />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+  </svg>
+);
 
 export default function HomePage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showSettingsReminder, setShowSettingsReminder] = useState(false);
   const [trackingLink, setTrackingLink] = useState<string | null>(null);
+  // Below lg the summary sits under the whole form, so a sticky bar shows the total until it scrolls into view.
+  const summaryRef = useRef<HTMLElement>(null);
+  const [summaryBelowFold, setSummaryBelowFold] = useState(false);
 
   const {
     value: settings,
@@ -224,6 +237,18 @@ export default function HomePage() {
       return { ...prev, workBlocks: nextBlocks, expenses: nextExpenses };
     });
   }, [invoiceReady, setInvoice]);
+
+  useEffect(() => {
+    const node = summaryRef.current;
+    if (!node || typeof IntersectionObserver === 'undefined') {
+      return;
+    }
+    const observer = new IntersectionObserver(([entry]) => {
+      setSummaryBelowFold(!entry.isIntersecting && entry.boundingClientRect.top > 0);
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   const localeDefaultSettings = () => {
     const base = defaultSettings();
@@ -502,27 +527,20 @@ export default function HomePage() {
 
   return (
     <>
-    <main className="min-h-screen pb-12 pt-10 sm:pt-14">
+    <main className="min-h-screen pb-12 pt-6 sm:pt-10">
       <div className="mx-auto flex w-full max-w-[1570px] flex-col gap-6 px-4 sm:px-6 lg:px-8">
-        <section className={`${cardClass} space-y-6`}>
-          <div className="flex flex-col gap-6">
-            <div className="flex-1 space-y-4">
-              <span className="inline-flex items-center gap-2 self-start rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 ring-1 ring-slate-200 dark:bg-slate-900 dark:text-slate-200 dark:ring-slate-800">
-                Private · Browser-based · PDF ready
-              </span>
-              <h1 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-5xl">
-                Invoicer 🧾
-              </h1>
-              <p className="max-w-2xl text-base text-slate-600 dark:text-slate-300 sm:text-lg">
-                A clean, lightweight builder for freelancers: log your work, keep totals accurate, and download a
-                ready-to-send PDF in seconds.
-              </p>
-            </div>
+        <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-3xl border border-slate-200/80 bg-white px-5 py-4 shadow-lg shadow-slate-900/5 transition-colors sm:px-8 sm:py-5 dark:border-slate-800 dark:bg-slate-950 dark:shadow-none">
+          <div className="min-w-0 space-y-0.5">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Invoicer 🧾</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              {ready ? 'Private and browser-based. Everything saves to this device automatically.' : 'Loading saved preferences…'}
+            </p>
           </div>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            {ready ? 'Settings stored locally on your device. Changes save automatically.' : 'Loading saved preferences…'}
-          </p>
-        </section>
+          <button type="button" className={buttonSecondary} onClick={() => setSettingsOpen(true)}>
+            <GearIcon />
+            Settings
+          </button>
+        </header>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           <section className={`${cardClass} space-y-8`}>
@@ -620,26 +638,10 @@ export default function HomePage() {
             </div>
           </section>
 
-          <aside className={`${cardClass} flex flex-col gap-6`}>
-            <div className="flex items-start justify-between gap-3">
-              <div className="space-y-1">
-                <p className="text-sm font-semibold text-slate-900 dark:text-white">Quick actions</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Adjust settings or clear local data.</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button className={iconButton} onClick={() => setSettingsOpen(true)} aria-label="Open settings">
-                  ⚙️
-                </button>
-                <button
-                  className={`${iconButton} text-rose-600 hover:ring-rose-200 dark:text-rose-200 dark:hover:ring-rose-400/60`}
-                  onClick={confirmAndClearAll}
-                  aria-label="Reset stored data"
-                >
-                  🔄
-                </button>
-              </div>
-            </div>
-
+          <aside ref={summaryRef} aria-labelledby="summary-heading" className={`${cardClass} flex flex-col gap-6 lg:sticky lg:top-6 lg:self-start`}>
+            <h2 id="summary-heading" className="text-lg font-semibold text-slate-900 dark:text-white">
+              Summary
+            </h2>
             <TotalsPanel
               totals={totals}
               taxRate={invoice.taxRate}
@@ -676,9 +678,30 @@ export default function HomePage() {
 
     </main>
 
+      {/* Sticky total for small screens — hidden once the Summary card is reached */}
+      <div
+        inert={!summaryBelowFold}
+        aria-hidden={!summaryBelowFold}
+        className={`fixed inset-x-0 bottom-0 z-10 border-t border-slate-200/80 bg-white/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-8px_24px_rgba(15,23,42,0.06)] backdrop-blur transition-transform duration-200 lg:hidden dark:border-slate-800 dark:bg-slate-950/95 ${summaryBelowFold ? 'translate-y-0' : 'translate-y-full'}`}
+      >
+        <div className="mx-auto flex max-w-xl items-center justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              {totals.taxAmount > 0 ? 'Total incl. tax' : 'Total'}
+            </p>
+            <p className="truncate text-xl font-bold tabular-nums text-slate-900 dark:text-white">
+              {formatMoney(settings.currencySymbol, totals.total)}
+            </p>
+          </div>
+          <button className={buttonPrimary} onClick={handleGenerate} disabled={disableGenerate}>
+            Generate PDF
+          </button>
+        </div>
+      </div>
+
       {/* Track in Accounts toast — outside <main> to avoid transform/overflow ancestors breaking fixed positioning */}
       {trackingLink && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-white px-5 py-3 shadow-xl shadow-slate-900/10 animate-fade-in dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/30">
+        <div className={`fixed right-4 z-50 sm:right-6 ${summaryBelowFold ? 'bottom-24 lg:bottom-6' : 'bottom-6'} flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-white px-5 py-3 shadow-xl shadow-slate-900/10 animate-fade-in dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/30`}>
           <p className="text-sm text-slate-700 dark:text-slate-200">PDF downloaded.</p>
           <a
             href={trackingLink}
@@ -692,10 +715,12 @@ export default function HomePage() {
             </svg>
           </a>
           <button
+            type="button"
+            aria-label="Dismiss"
             onClick={() => setTrackingLink(null)}
             className="ml-1 rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
           >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <svg aria-hidden className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
             </svg>
           </button>
@@ -827,7 +852,7 @@ function TotalsPanel({
   setTaxRate: (tax: number) => void;
   currency: string;
 }) {
-  const rowClass = 'flex items-center justify-between text-base text-slate-700 dark:text-slate-200';
+  const rowClass = 'flex items-center justify-between gap-3 text-base tabular-nums text-slate-700 dark:text-slate-200';
   const showTaxLine = taxRate > 0 && totals.taxAmount > 0;
   const showPreTaxLine = showTaxLine;
 
@@ -850,23 +875,20 @@ function TotalsPanel({
         <div className={rowClass}>
           <span>Work subtotal</span>
           <strong className="text-lg text-slate-900 dark:text-white">
-            {currency}
-            {totals.workSubtotal.toFixed(2)}
+            {formatMoney(currency, totals.workSubtotal)}
           </strong>
         </div>
         <div className={rowClass}>
           <span>Expenses</span>
           <strong className="text-lg text-slate-900 dark:text-white">
-            {currency}
-            {totals.expensesSubtotal.toFixed(2)}
+            {formatMoney(currency, totals.expensesSubtotal)}
           </strong>
         </div>
         {showPreTaxLine && (
           <div className={rowClass}>
             <span>Subtotal before tax</span>
             <strong className="text-lg text-slate-900 dark:text-white">
-              {currency}
-              {totals.preTaxSubtotal.toFixed(2)}
+              {formatMoney(currency, totals.preTaxSubtotal)}
             </strong>
           </div>
         )}
@@ -874,16 +896,14 @@ function TotalsPanel({
           <div className={rowClass}>
             <span>Tax</span>
             <strong className="text-lg text-slate-900 dark:text-white">
-              {currency}
-              {totals.taxAmount.toFixed(2)}
+              {formatMoney(currency, totals.taxAmount)}
             </strong>
           </div>
         )}
         <div className={`${rowClass} border-t border-slate-200 pt-3 text-lg font-semibold text-slate-900 dark:border-slate-700 dark:text-white`}>
           <span>Total</span>
           <strong className="text-2xl text-slate-900 dark:text-white">
-            {currency}
-            {totals.total.toFixed(2)}
+            {formatMoney(currency, totals.total)}
           </strong>
         </div>
       </div>
