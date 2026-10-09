@@ -10,11 +10,19 @@ export const createWorkBlockId = () => `block-${Date.now()}-${Math.random().toSt
 export const createExpenseId = () => `expense-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 export const createExtraReferenceId = () => `ref-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
-export const defaultSettings = (): Settings => ({
+// Sample values older versions stored as real settings; cleared on load so they show as placeholders instead.
+export const LEGACY_PLACEHOLDER_SETTINGS: Partial<Record<keyof Settings, string>> = {
   businessName: 'Your Name or Company',
   businessAddress: '123 Sample Street\nCity, Country',
   email: 'you@example.com',
   phone: '+00 1234 567890',
+};
+
+export const defaultSettings = (): Settings => ({
+  businessName: '',
+  businessAddress: '',
+  email: '',
+  phone: '',
   defaultClientName: '',
   defaultDailyRate: 150,
   currencySymbol: FALLBACK_CURRENCY.symbol,

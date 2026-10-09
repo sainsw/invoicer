@@ -15,6 +15,7 @@ import {
   emptyExpense,
   emptyWorkBlock,
   INVOICE_KEY,
+  LEGACY_PLACEHOLDER_SETTINGS,
   SETTINGS_KEY,
 } from '@/lib/defaults';
 import {
@@ -103,10 +104,12 @@ export default function HomePage() {
         const validRange = isValidDateRange(block.startDate, block.endDate);
         const days = validRange ? countWorkingDays(block.startDate, block.endDate) : 0;
         const dailyRate = Math.max(0, block.dailyRate || 0);
-        const lineTotal = Number((days * dailyRate).toFixed(2));
         const blockTotal = block.billingMode === 'block'
           ? Math.max(0, block.blockTotal || 0)
-          : lineTotal;
+          : Number((days * dailyRate).toFixed(2));
+        // A block-billed line charges exactly the entered total; the derived daily rate is rounded,
+        // so days × rate can drift from it by a penny.
+        const lineTotal = block.billingMode === 'block' ? blockTotal : Number((days * dailyRate).toFixed(2));
         return {
           ...block,
           billingMode: block.billingMode === 'block' ? 'block' : 'daily',
@@ -137,12 +140,7 @@ export default function HomePage() {
     return { workSubtotal, expensesSubtotal, preTaxSubtotal, taxAmount, total };
   }, [computedBlocks, expenses, invoice.taxRate]);
 
-  const usingPlaceholderSettings = useMemo(() => {
-    const defaults = defaultSettings();
-    const keys: Array<keyof Settings> = ['businessName', 'businessAddress', 'email', 'phone', 'bankDetails'];
-    const normalize = (value: Settings[typeof keys[number]]) => (typeof value === 'string' ? value.trim() : String(value));
-    return keys.every((key) => normalize(settings[key]) === normalize(defaults[key]));
-  }, [settings]);
+  const usingPlaceholderSettings = !settings.businessName?.trim();
 
   const ready = settingsReady && invoiceReady && clientsReady;
 
@@ -193,17 +191,15 @@ export default function HomePage() {
     if (typeof settings.filenameTemplate !== 'string') {
       patch.filenameTemplate = defaults.filenameTemplate;
     }
+    for (const [key, sample] of Object.entries(LEGACY_PLACEHOLDER_SETTINGS) as Array<[keyof Settings, string]>) {
+      if (settings[key] === sample) {
+        Object.assign(patch, { [key]: '' });
+      }
+    }
     if (Object.keys(patch).length > 0) {
       setSettings((prev) => ({ ...prev, ...patch }));
     }
-  }, [
-    setSettings,
-    settings.bodyColor,
-    settings.extraReferences,
-    settings.filenameTemplate,
-    settings.headerColor,
-    settingsReady,
-  ]);
+  }, [setSettings, settings, settingsReady]);
 
   useEffect(() => {
     if (!invoiceReady) {
@@ -744,19 +740,8 @@ function MetadataForm({
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-1.5">
-          <label htmlFor="invoiceMonth" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-            Invoice month
-          </label>
-          <input
-            type="month"
-            id="invoiceMonth"
-            className={fieldClass}
-            value={invoice.invoiceMonth}
-            onChange={(event) => onChange({ invoiceMonth: event.target.value })}
-          />
-        </div>
+      {/* 2 columns: number · month / date · PO / email (wide). 3 columns: number · month · date / PO · email (wide). */}
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <div className="space-y-1.5">
           <label htmlFor="invoiceNumber" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
             Invoice number
@@ -767,6 +752,18 @@ function MetadataForm({
             value={invoice.invoiceNumber}
             onChange={(event) => onChange({ invoiceNumber: event.target.value })}
             placeholder="Invoice #14"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label htmlFor="invoiceMonth" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+            Invoice month
+          </label>
+          <input
+            type="month"
+            id="invoiceMonth"
+            className={fieldClass}
+            value={invoice.invoiceMonth}
+            onChange={(event) => onChange({ invoiceMonth: event.target.value })}
           />
         </div>
         <div className="space-y-1.5">
@@ -781,9 +778,6 @@ function MetadataForm({
             onChange={(event) => onChange({ issueDate: event.target.value })}
           />
         </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-1.5">
           <label htmlFor="purchaseOrder" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
             Purchase order / contact
@@ -796,7 +790,7 @@ function MetadataForm({
             placeholder="PO-123 or Jane Doe"
           />
         </div>
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 md:col-span-2">
           <label htmlFor="remittanceEmail" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
             Remittance email
           </label>

@@ -5,9 +5,20 @@ import { useEffect, useState } from 'react';
 interface PrideAvatarProps {
   children: React.ReactNode;
   className?: string;
+  // Width in px of each pride ring; smaller avatars want thinner rings.
+  ringStep?: number;
 }
 
-export function PrideAvatar({ children, className = '' }: PrideAvatarProps) {
+const PRIDE_COLOURS = [
+  'rgb(239 68 68)',
+  'rgb(249 115 22)',
+  'rgb(250 204 21)',
+  'rgb(34 197 94)',
+  'rgb(59 130 246)',
+  'rgb(147 51 234)',
+];
+
+export function PrideAvatar({ children, className = '', ringStep = 3 }: PrideAvatarProps) {
   const [isPrideTime, setIsPrideTime] = useState(false);
 
   useEffect(() => {
@@ -54,7 +65,7 @@ export function PrideAvatar({ children, className = '' }: PrideAvatarProps) {
   if (!isPrideTime) {
     return (
       <div
-        className={`rounded-full ring-2 ring-slate-900/80 shadow-soft dark:ring-white/80 dark:shadow-black/30 ${className}`}
+        className={`rounded-full ${ringStep < 3 ? 'ring-1 ring-slate-900/15 dark:ring-white/20' : 'ring-2 ring-slate-900/80 shadow-soft dark:ring-white/80 dark:shadow-black/30'} ${className}`}
       >
         {children}
       </div>
@@ -66,14 +77,7 @@ export function PrideAvatar({ children, className = '' }: PrideAvatarProps) {
       <div
         className="rounded-full"
         style={{
-          boxShadow: `
-            0 0 0 3px rgb(239 68 68),
-            0 0 0 6px rgb(249 115 22),
-            0 0 0 9px rgb(250 204 21),
-            0 0 0 12px rgb(34 197 94),
-            0 0 0 15px rgb(59 130 246),
-            0 0 0 18px rgb(147 51 234)
-          `,
+          boxShadow: PRIDE_COLOURS.map((colour, i) => `0 0 0 ${(i + 1) * ringStep}px ${colour}`).join(', '),
         }}
       >
         {children}

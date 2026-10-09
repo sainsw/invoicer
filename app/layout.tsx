@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
-import { BuiltWithLove } from '@/components/BuiltWith';
 import { Footer } from '@/components/Footer';
 import './globals.css';
 
@@ -65,7 +64,6 @@ export default function RootLayout({
           <div className="pointer-events-none absolute inset-x-0 top-0 h-[320px] bg-gradient-to-b from-brand-200/40 via-white/50 to-transparent blur-3xl dark:from-brand-400/10 dark:via-white/10" />
           <div className="relative flex min-h-screen flex-col">
             {children}
-            <BuiltWithLove />
             <Footer />
           </div>
         </div>

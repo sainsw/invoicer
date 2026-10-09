@@ -18,7 +18,6 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { formatHumanDate } from '@sainsw/invoice-pdf';
 import { ReorderCallout } from '@/components/ReorderCallout';
 import { formatMoney } from '@/lib/format';
 import { useReorderAnimation } from '@/hooks/useReorderAnimation';
@@ -55,6 +54,8 @@ const desktopInputClass = tableInputClass.replace('px-3.5', 'px-2.5');
 const descriptionInputClass = `${desktopInputClass} min-w-0`;
 const rateInputClass = `${desktopInputClass} text-right`;
 
+const cardLabelClass = 'text-sm font-semibold text-slate-700 dark:text-slate-200';
+
 const dragHandleClass =
   'inline-flex h-8 w-8 cursor-grab touch-none items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 active:cursor-grabbing focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-100';
 
@@ -86,14 +87,6 @@ const GripIcon = () => (
     <circle cx="10" cy="11" r="1.2" fill="currentColor" />
   </svg>
 );
-
-const safeDate = (value: string) => {
-  try {
-    return formatHumanDate(value);
-  } catch {
-    return '—';
-  }
-};
 
 const SortableDesktopRow = ({
   block,
@@ -162,7 +155,6 @@ const SortableDesktopRow = ({
           value={block.startDate}
           onChange={(event) => onBlockChange(block.id, { startDate: event.target.value })}
         />
-        <small className="mt-1 block text-xs text-slate-400 dark:text-slate-500">{safeDate(block.startDate)}</small>
       </div>
       <div role="cell" className="text-slate-600 dark:text-slate-300">
         <input
@@ -171,7 +163,6 @@ const SortableDesktopRow = ({
           value={block.endDate}
           onChange={(event) => onBlockChange(block.id, { endDate: event.target.value })}
         />
-        <small className="mt-1 block text-xs text-slate-400 dark:text-slate-500">{safeDate(block.endDate)}</small>
       </div>
       <div role="cell" className="pt-2.5 text-center font-semibold tabular-nums text-slate-900 dark:text-white">
         {block.days}
@@ -255,6 +246,7 @@ const SortableCard = ({
   });
   const toggleRef = useRef<HTMLButtonElement>(null);
   const isOpen = openMenuId === block.id;
+  const fieldId = useId();
 
   const style: CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -271,9 +263,9 @@ const SortableCard = ({
         flipRef(el);
       }}
       style={style}
-      className="space-y-4 rounded-3xl border border-slate-200/80 bg-white p-4 shadow-md shadow-slate-900/5 transition-colors dark:border-slate-800 dark:bg-slate-950 dark:shadow-none"
+      className="space-y-4 rounded-3xl border border-slate-200/80 bg-white p-3 shadow-md sm:p-4 shadow-slate-900/5 transition-colors dark:border-slate-800 dark:bg-slate-950 dark:shadow-none"
     >
-      <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2">
         <div className="relative">
           <button
             ref={toggleRef}
@@ -300,13 +292,28 @@ const SortableCard = ({
             />
           )}
         </div>
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-          Drag · tap for options
-        </span>
+        <span className="mr-auto whitespace-nowrap pl-1 text-sm font-semibold text-slate-900 dark:text-white">Block {index + 1}</span>
+        <div className="flex gap-1.5 text-xs font-semibold">
+          <button
+            type="button"
+            className="inline-flex items-center rounded-full bg-brand-50 px-2.5 py-1 text-brand-700 transition hover:bg-brand-100 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
+            onClick={() => onDuplicate(block.id)}
+          >
+            Duplicate
+          </button>
+          <button
+            type="button"
+            className="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-1 text-rose-600 transition hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-200 dark:hover:bg-rose-900/50"
+            onClick={() => onRemove(block.id)}
+          >
+            Remove
+          </button>
+        </div>
       </div>
-      <div className="space-y-2">
-        <label className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Description</label>
+      <div className="space-y-1.5">
+        <label htmlFor={`${fieldId}-description`} className={cardLabelClass}>Description</label>
         <input
+          id={`${fieldId}-description`}
           type="text"
           className={tableInputClass}
           value={block.description}
@@ -320,31 +327,32 @@ const SortableCard = ({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <label className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Start date</label>
+          <label htmlFor={`${fieldId}-start`} className={cardLabelClass}>Start date</label>
           <input
+            id={`${fieldId}-start`}
             type="date"
             className={tableInputClass}
             value={block.startDate}
             onChange={(event) => onBlockChange(block.id, { startDate: event.target.value })}
           />
-          <small className="text-xs text-slate-400 dark:text-slate-500">{safeDate(block.startDate)}</small>
         </div>
         <div className="space-y-1.5">
-          <label className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">End date</label>
+          <label htmlFor={`${fieldId}-end`} className={cardLabelClass}>End date</label>
           <input
+            id={`${fieldId}-end`}
             type="date"
             className={tableInputClass}
             value={block.endDate}
             onChange={(event) => onBlockChange(block.id, { endDate: event.target.value })}
           />
-          <small className="text-xs text-slate-400 dark:text-slate-500">{safeDate(block.endDate)}</small>
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <label className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Daily rate</label>
+          <label htmlFor={`${fieldId}-rate`} className={cardLabelClass}>Daily rate</label>
           <input
+            id={`${fieldId}-rate`}
             type="number"
             min={0}
             className={tableInputClass}
@@ -353,8 +361,9 @@ const SortableCard = ({
           />
         </div>
         <div className="space-y-1.5">
-          <label className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Block total</label>
+          <label htmlFor={`${fieldId}-total`} className={cardLabelClass}>Block total</label>
           <input
+            id={`${fieldId}-total`}
             type="number"
             min={0}
             className={tableInputClass}
@@ -362,34 +371,13 @@ const SortableCard = ({
             onChange={(event) => onBlockChange(block.id, { blockTotal: Number(event.target.value) || 0 })}
           />
         </div>
-        <div className="space-y-1.5">
-          <label className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Days</label>
-          <p className="py-2 text-sm font-semibold tabular-nums text-slate-900 dark:text-white">
-            {block.days} {block.days === 1 ? 'day' : 'days'}
-          </p>
-        </div>
       </div>
 
       <div className="flex items-center justify-between rounded-xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-900 dark:bg-slate-900 dark:text-white">
-        <span>Total</span>
+        <span className="tabular-nums">
+          {block.days} {block.days === 1 ? 'working day' : 'working days'}
+        </span>
         <span className="tabular-nums">{formatMoney(currencySymbol, block.lineTotal)}</span>
-      </div>
-
-      <div className="flex flex-wrap gap-3 text-sm font-semibold">
-        <button
-          type="button"
-          className="inline-flex items-center rounded-full bg-brand-50 px-3 py-1 text-brand-700 transition hover:bg-brand-100 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
-          onClick={() => onDuplicate(block.id)}
-        >
-          Duplicate
-        </button>
-        <button
-          type="button"
-          className="inline-flex items-center rounded-full bg-rose-50 px-3 py-1 text-rose-600 transition hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-200 dark:hover:bg-rose-900/50"
-          onClick={() => onRemove(block.id)}
-        >
-          Remove
-        </button>
       </div>
     </div>
   );

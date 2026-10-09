@@ -18,9 +18,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { formatHumanDate } from '@sainsw/invoice-pdf';
 import { ReorderCallout } from '@/components/ReorderCallout';
-import { formatMoney } from '@/lib/format';
 import { useReorderAnimation } from '@/hooks/useReorderAnimation';
 import type { Expense } from '@sainsw/invoice-pdf';
 
@@ -57,6 +55,8 @@ const dragHandleClass =
 const desktopInputClass = tableInputClass.replace('px-3.5', 'px-2.5');
 
 // Desktop grid: date, notes, value, options/drag handle. 400px of columns + 3 gaps of 6px + px-2 → 434px.
+const cardLabelClass = 'text-sm font-semibold text-slate-700 dark:text-slate-200';
+
 const desktopGridClass =
   'grid grid-cols-[124px_minmax(140px,1fr)_104px_32px] items-start gap-x-1.5';
 const desktopMinWidthClass = 'min-w-[434px]';
@@ -81,14 +81,6 @@ const GripIcon = () => (
     <circle cx="10" cy="11" r="1.2" fill="currentColor" />
   </svg>
 );
-
-const safeDate = (value: string) => {
-  try {
-    return formatHumanDate(value);
-  } catch {
-    return '—';
-  }
-};
 
 const SortableDesktopRow = ({
   expense,
@@ -139,7 +131,6 @@ const SortableDesktopRow = ({
           value={expense.date}
           onChange={(event) => onExpenseChange(expense.id, { date: event.target.value })}
         />
-        <small className="mt-1 block text-xs text-slate-400 dark:text-slate-500">{safeDate(expense.date)}</small>
       </div>
       <div role="cell" className="min-w-0">
         <input
@@ -214,6 +205,7 @@ const SortableCard = ({
   });
   const toggleRef = useRef<HTMLButtonElement>(null);
   const isOpen = openMenuId === expense.id;
+  const fieldId = useId();
 
   const style: CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -230,9 +222,9 @@ const SortableCard = ({
         flipRef(el);
       }}
       style={style}
-      className="space-y-4 rounded-3xl border border-slate-200/80 bg-white p-4 shadow-md shadow-slate-900/5 transition-colors dark:border-slate-800 dark:bg-slate-950 dark:shadow-none"
+      className="space-y-4 rounded-3xl border border-slate-200/80 bg-white p-3 shadow-md sm:p-4 shadow-slate-900/5 transition-colors dark:border-slate-800 dark:bg-slate-950 dark:shadow-none"
     >
-      <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2">
         <div className="relative">
           <button
             ref={toggleRef}
@@ -259,23 +251,19 @@ const SortableCard = ({
             />
           )}
         </div>
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-          Drag · tap for options
-        </span>
+        <span className="mr-auto whitespace-nowrap pl-1 text-sm font-semibold text-slate-900 dark:text-white">Expense {index + 1}</span>
+        <button
+          type="button"
+          className="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-600 transition hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-200 dark:hover:bg-rose-900/50"
+          onClick={() => onRemove(expense.id)}
+        >
+          Remove
+        </button>
       </div>
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Date</label>
+        <label htmlFor={`${fieldId}-notes`} className={cardLabelClass}>Notes</label>
         <input
-          type="date"
-          className={tableInputClass}
-          value={expense.date}
-          onChange={(event) => onExpenseChange(expense.id, { date: event.target.value })}
-        />
-        <small className="text-xs text-slate-400 dark:text-slate-500">{safeDate(expense.date)}</small>
-      </div>
-      <div className="space-y-1.5">
-        <label className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Notes</label>
-        <input
+          id={`${fieldId}-notes`}
           type="text"
           className={tableInputClass}
           value={expense.notes}
@@ -283,27 +271,29 @@ const SortableCard = ({
           placeholder="e.g. Travel to client site"
         />
       </div>
-      <div className="space-y-1.5">
-        <label className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Value</label>
-        <input
-          type="number"
-          min={0}
-          className={tableInputClass}
-          value={expense.value}
-          onChange={(event) => onExpenseChange(expense.id, { value: Number(event.target.value) || 0 })}
-        />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="min-w-0 space-y-1.5">
+          <label htmlFor={`${fieldId}-date`} className={cardLabelClass}>Date</label>
+          <input
+            id={`${fieldId}-date`}
+            type="date"
+            className={tableInputClass}
+            value={expense.date}
+            onChange={(event) => onExpenseChange(expense.id, { date: event.target.value })}
+          />
+        </div>
+        <div className="min-w-0 space-y-1.5">
+          <label htmlFor={`${fieldId}-value`} className={cardLabelClass}>Amount ({currencySymbol})</label>
+          <input
+            id={`${fieldId}-value`}
+            type="number"
+            min={0}
+            className={tableInputClass}
+            value={expense.value}
+            onChange={(event) => onExpenseChange(expense.id, { value: Number(event.target.value) || 0 })}
+          />
+        </div>
       </div>
-      <div className="flex items-center justify-between rounded-xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-900 dark:bg-slate-900 dark:text-white">
-        <span>Amount</span>
-        <span className="tabular-nums">{formatMoney(currencySymbol, expense.value)}</span>
-      </div>
-      <button
-        type="button"
-        className="inline-flex items-center rounded-full bg-rose-50 px-3 py-1 text-sm font-semibold text-rose-600 transition hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-200 dark:hover:bg-rose-900/50"
-        onClick={() => onRemove(expense.id)}
-      >
-        Remove
-      </button>
     </div>
   );
 };

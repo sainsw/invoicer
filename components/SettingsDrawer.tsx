@@ -221,12 +221,12 @@ export const SettingsDrawer = ({
         )}
 
         <div className="mt-6 flex flex-col gap-5">
-          {field('Business / Trading Name', 'businessName')}
-          {field('Business Address', 'businessAddress', true, 'Street\nCity\nPostcode')}
-          {field('Email', 'email')}
-          {field('Phone', 'phone')}
-          {field('Default Client Name', 'defaultClientName')}
-          {field('Default Daily Rate', 'defaultDailyRate')}
+          {field('Business or trading name', 'businessName', false, 'Your name or company')}
+          {field('Business address', 'businessAddress', true, 'Street\nCity\nPostcode')}
+          {field('Email', 'email', false, 'you@example.com')}
+          {field('Phone', 'phone', false, '+44 7700 900123')}
+          {field('Default client name', 'defaultClientName')}
+          {field('Default daily rate', 'defaultDailyRate')}
           <div className="space-y-2">
             <div className="space-y-1.5">
               <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Currency</p>
@@ -251,10 +251,10 @@ export const SettingsDrawer = ({
               )}
             </div>
           </div>
-          {field('Default Payment Terms (days)', 'defaultPaymentTerms')}
-          {field('Bank / Payment Details', 'bankDetails', true)}
-          {field('Header Background Color', 'headerColor')}
-          {field('Body Background Color (below header)', 'bodyColor')}
+          {field('Default payment terms (days)', 'defaultPaymentTerms')}
+          {field('Bank or payment details', 'bankDetails', true)}
+          {field('Header background colour', 'headerColor')}
+          {field('Body background colour (below header)', 'bodyColor')}
           <div className="space-y-1.5">
             <label htmlFor="defaultNotes" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
               Default notes
