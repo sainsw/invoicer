@@ -29,6 +29,8 @@ interface SettingsDrawerProps {
   open: boolean;
   settings: Settings;
   onClose: () => void;
+  // Field to put the cursor in on open, instead of the panel itself.
+  initialFocusId?: string;
   onChange: (settings: Settings) => void;
   onReset: () => void;
   onClearAll: () => void;
@@ -49,6 +51,7 @@ export const SettingsDrawer = ({
   open,
   settings,
   onClose,
+  initialFocusId,
   onChange,
   onReset,
   onClearAll,
@@ -65,9 +68,11 @@ export const SettingsDrawer = ({
   const [notesTouched, setNotesTouched] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
+  const initialFocusRef = useRef(initialFocusId);
   useEffect(() => {
     onCloseRef.current = onClose;
-  }, [onClose]);
+    initialFocusRef.current = initialFocusId;
+  }, [onClose, initialFocusId]);
 
   // Modal keyboard behaviour: focus moves into the panel, Tab stays inside it, Escape closes,
   // and focus returns to whatever opened the drawer.
@@ -76,7 +81,18 @@ export const SettingsDrawer = ({
       return;
     }
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    panelRef.current?.focus();
+    const panel = panelRef.current;
+    const initialField = initialFocusRef.current ? document.getElementById(initialFocusRef.current) : null;
+    const section = initialField?.closest('section');
+    if (panel && initialField && section) {
+      // Open with the field's whole section in view, its heading just below the pinned header.
+      const header = panel.firstElementChild as HTMLElement | null;
+      const headerHeight = header?.offsetHeight ?? 0;
+      panel.scrollTop += section.getBoundingClientRect().top - panel.getBoundingClientRect().top - headerHeight - 24;
+      initialField.focus({ preventScroll: true });
+    } else {
+      panel?.focus();
+    }
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {

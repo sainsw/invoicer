@@ -19,7 +19,10 @@ import {
   INVOICE_KEY,
   LABS_KEY,
   LEGACY_PLACEHOLDER_SETTINGS,
+  BANK_DETAILS_EXAMPLE,
   defaultLabs,
+  defaultPrompts,
+  PROMPTS_KEY,
   SETTINGS_KEY,
 } from '@/lib/defaults';
 import {
@@ -63,6 +66,8 @@ const buttonSecondary = `${buttonBase} bg-sheet text-ink ring-1 ring-edge hover:
 // Swap the padding rather than append it: two py-* classes on one element resolve by stylesheet order, not class order.
 const buttonSectionAction = buttonSecondary.replace('px-4 py-2.5', 'px-3 py-1.5');
 const buttonGhost = `${buttonBase} bg-transparent text-ink-2 hover:bg-well hover:text-ink`;
+// Second choice beside buttonSectionAction on a warning note, in the note's own ink.
+const buttonCompactQuiet = buttonGhost.replace('px-4 py-2.5', 'px-3 py-1.5').replace(' text-ink-2 ', ' text-warn-ink ');
 const fieldClass =
   'w-full min-w-0 rounded-md border border-edge bg-field px-3.5 py-2.5 text-[15px] text-ink transition hover:border-ink-2 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30 placeholder:text-ink-3';
 // Swap colours rather than append them, for the same reason as buttonSectionAction.
@@ -86,6 +91,8 @@ const GearIcon = () => (
 
 export default function HomePage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // A field to put the cursor in when the settings panel opens, e.g. bank details from the download check.
+  const [settingsFocusId, setSettingsFocusId] = useState<string | undefined>(undefined);
   const [showSettingsReminder, setShowSettingsReminder] = useState(false);
   const [showDownloadedToast, setShowDownloadedToast] = useState(false);
   const [trackingLink, setTrackingLink] = useState<string | null>(null);
@@ -114,6 +121,9 @@ export default function HomePage() {
   } = usePersistentState(CLIENTS_KEY, defaultClientsState);
 
   const { value: labs, setValue: setLabs } = usePersistentState(LABS_KEY, defaultLabs);
+  const { value: prompts, setValue: setPrompts } = usePersistentState(PROMPTS_KEY, defaultPrompts);
+  // Asked once at download when there are no bank details; goes away as soon as some are added.
+  const [bankNudge, setBankNudge] = useState(false);
 
   const activeClient = clientsState.clients.find((client) => client.id === clientsState.activeId) ?? null;
   const activeClientDirty = activeClient ? profileDiffers(activeClient, invoice) : false;
@@ -189,6 +199,7 @@ export default function HomePage() {
   }, [aboutYouRevealing]);
   const closeSettings = () => {
     setSettingsOpen(false);
+    setSettingsFocusId(undefined);
     if (!settings.businessName.trim()) {
       revealAboutYou();
     }
@@ -505,11 +516,14 @@ export default function HomePage() {
     setInvoice(invoiceDefaults);
     setClientsState(defaultClientsState());
     setLabs(defaultLabs());
+    setPrompts(defaultPrompts());
+    setBankNudge(false);
     if (typeof window !== 'undefined') {
       window.localStorage.removeItem(SETTINGS_KEY);
       window.localStorage.removeItem(INVOICE_KEY);
       window.localStorage.removeItem(CLIENTS_KEY);
       window.localStorage.removeItem(LABS_KEY);
+      window.localStorage.removeItem(PROMPTS_KEY);
     }
     setSettingsOpen(false);
     revealAboutYou();
@@ -524,7 +538,7 @@ export default function HomePage() {
     clearAllData();
   };
 
-  const handleGenerate = () => {
+  const handleGenerate = ({ skipBankCheck = false } = {}) => {
     setShowSettingsReminder(false);
     let pdfInvoice = invoice;
     if (aboutYou === 'show') {
@@ -545,6 +559,13 @@ export default function HomePage() {
       setSettingsOpen(true);
       return;
     }
+    // No bank details means the invoice doesn't say how to pay you. Ask once; "Download anyway" stops it asking.
+    if (!skipBankCheck && !settings.bankDetails.trim() && !prompts.bankDetailsSkipped) {
+      setBankNudge(true);
+      summaryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      return;
+    }
+    setBankNudge(false);
     generateInvoicePdf({ settings, invoice: pdfInvoice, lineItems: computedBlocks, totals });
     setShowDownloadedToast(true);
     setTrackingLink(null);
@@ -609,6 +630,20 @@ export default function HomePage() {
     handleGenerate();
   };
 
+  const showBankNudge = bankNudge && !settings.bankDetails.trim();
+
+  const addBankDetails = () => {
+    setBankNudge(false);
+    setSettingsFocusId('bankDetails');
+    setSettingsOpen(true);
+  };
+
+  const downloadWithoutBankDetails = () => {
+    setPrompts((prev) => ({ ...prev, bankDetailsSkipped: true }));
+    setStamping(true);
+    handleGenerate({ skipBankCheck: true });
+  };
+
   return (
     <>
     <main className="pb-14 pt-6 sm:pt-10">
@@ -648,7 +683,7 @@ export default function HomePage() {
                     <Section
                       number="00"
                       title="About you"
-                      description="This goes at the top of your invoice so your client knows who it’s from. It’s saved on this computer as you type, and you can change it later in Your details."
+                      description="This goes on your invoice so your client knows who it’s from and how to pay you. It’s saved on this computer as you type, and you can change it later in Your details."
                     >
                       <AboutYouForm
                         value={settings}
@@ -791,9 +826,25 @@ export default function HomePage() {
                 >
                   Download invoice
                 </button>
-                <p className="mt-3 text-center text-[13px] text-ink-2">
-                  {ready ? 'Saves a PDF you can email or print' : 'Loading your details…'}
-                </p>
+                <div aria-live="polite" className="mt-3">
+                  {showBankNudge ? (
+                    <div className="animate-fade-in space-y-3 rounded-md bg-warn-soft px-4 py-3 text-warn-ink">
+                      <p className="text-sm font-semibold">This invoice doesn’t say how to pay you.</p>
+                      <div className="flex flex-wrap gap-2">
+                        <button type="button" className={buttonSectionAction} onClick={addBankDetails}>
+                          Add bank details
+                        </button>
+                        <button type="button" className={buttonCompactQuiet} onClick={downloadWithoutBankDetails}>
+                          Download anyway
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-center text-[13px] text-ink-2">
+                      {ready ? 'Saves a PDF you can email or print' : 'Loading your details…'}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           </aside>
@@ -804,6 +855,7 @@ export default function HomePage() {
         open={settingsOpen}
         settings={settings}
         onClose={closeSettings}
+        initialFocusId={settingsFocusId}
         onChange={handleSettingsChange}
         onReset={resetSettingsToDefaults}
         onClearAll={confirmAndClearAll}
@@ -973,7 +1025,7 @@ function MetadataForm({
   );
 }
 
-type AboutYouDetails = Pick<Settings, 'businessName' | 'businessAddress' | 'email'>;
+type AboutYouDetails = Pick<Settings, 'businessName' | 'businessAddress' | 'email' | 'bankDetails'>;
 
 const hasNoBusinessDetails = (settings: Settings) =>
   (['businessName', 'businessAddress', 'email'] as const).every((key) => {
@@ -1033,6 +1085,22 @@ function AboutYouForm({
           autoComplete="street-address"
         />
       </Field>
+      <div className="space-y-1.5">
+        <label htmlFor="aboutBankDetails" className={labelClass}>
+          How to pay you (optional)
+        </label>
+        <p className="text-[13px] text-ink-2">
+          Your bank details, printed at the bottom so your client knows where to send the money.
+        </p>
+        <textarea
+          id="aboutBankDetails"
+          className={`${fieldClass} min-h-[96px] whitespace-pre leading-relaxed`}
+          value={value.bankDetails}
+          onChange={(event) => onChange({ bankDetails: event.target.value })}
+          placeholder={BANK_DETAILS_EXAMPLE}
+          spellCheck={false}
+        />
+      </div>
     </div>
   );
 }

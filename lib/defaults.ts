@@ -10,6 +10,14 @@ export type Labs = { accountsLink: boolean };
 
 export const defaultLabs = (): Labs => ({ accountsLink: false });
 
+// One-off questions the app has been told not to ask again. Kept apart from Settings so resetting
+// your details doesn't bring them back.
+export const PROMPTS_KEY = 'simpleInvoice.prompts';
+
+export type Prompts = { bankDetailsSkipped: boolean };
+
+export const defaultPrompts = (): Prompts => ({ bankDetailsSkipped: false });
+
 export const DEFAULT_FILENAME_TEMPLATE = '[businessname]-[issuedate]-[invoicenumber]';
 
 export const createWorkBlockId = () => `block-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
