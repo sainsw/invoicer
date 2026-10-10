@@ -292,7 +292,7 @@ export const SettingsDrawer = ({
         <div className="sticky top-0 z-20 -mx-6 flex items-start justify-between gap-4 border-b border-rule bg-sheet px-6 pb-4 pt-6 sm:-mx-8 sm:px-8">
           <div>
             <h2 id="settings-heading" className="text-2xl font-extrabold tracking-[-0.035em] text-ink">Your details</h2>
-            <p className="text-sm text-ink-2">Kept on this computer only. Changes save as you type.</p>
+            <p className="text-sm text-ink-2">Kept on this device only. Changes save as you type.</p>
           </div>
           <button className={buttonClasses.ghost} onClick={onClose}>
             Close
@@ -410,7 +410,7 @@ export const SettingsDrawer = ({
             <div className="space-y-3">
               <p className="text-[13px] text-ink-2">
                 <span className="block text-sm font-medium text-ink">Delete everything</span>
-                Removes your details, saved clients and this invoice from this computer.
+                Removes your details, saved clients and this invoice from this device.
               </p>
               <button type="button" className={buttonClasses.secondary.replace(' text-ink ', ' text-danger ')} onClick={onClearAll}>
                 Delete everything

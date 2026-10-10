@@ -536,7 +536,7 @@ export default function HomePage() {
 
   const confirmAndClearAll = () => {
     const message =
-      'Delete everything saved here? This removes your details, your saved clients and this invoice from this computer. It can’t be undone.';
+      'Delete everything saved here? This removes your details, your saved clients and this invoice from this device. It can’t be undone.';
     if (typeof window !== 'undefined' && !window.confirm(message)) {
       return;
     }
@@ -666,7 +666,7 @@ export default function HomePage() {
               Invoicer<span className="text-accent">.</span>
             </h1>
             <p className="text-sm text-ink-2">
-              {ready ? 'Fill this in, then download your invoice ready to send. Everything you type stays on this computer and is never sent anywhere.' : 'Loading your details…'}
+              {ready ? 'Fill this in, then download your invoice ready to send. Everything you type stays on this device and is never sent anywhere.' : 'Loading your details…'}
             </p>
           </div>
           <button
@@ -695,7 +695,7 @@ export default function HomePage() {
                     <Section
                       number="00"
                       title="About you"
-                      description="This goes on your invoice so your client knows who it’s from and how to pay you. It’s saved on this computer as you type, and you can change it later in Your details."
+                      description="This goes on your invoice so your client knows who it’s from and how to pay you. It’s saved on this device as you type, and you can change it later in Your details."
                     >
                       <AboutYouForm
                         value={settings}
