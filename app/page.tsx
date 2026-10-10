@@ -196,9 +196,10 @@ export default function HomePage() {
     if (!aboutYouRevealing) {
       return;
     }
-    // Wait a frame so the section is in the DOM, then bring it into view.
+    // Wait a frame so the section is in the DOM, then bring it into view if it isn't already. 'nearest'
+    // leaves the page alone when it's on screen; when it's above, scroll-mt keeps the card's top in view.
     const frame = requestAnimationFrame(() =>
-      aboutYouRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      aboutYouRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
     );
     return () => cancelAnimationFrame(frame);
   }, [aboutYouRevealing]);
@@ -688,7 +689,7 @@ export default function HomePage() {
                 // it's done so field focus rings aren't cut off.
                 <div
                   ref={aboutYouRef}
-                  className={aboutYouRevealing ? 'grid animate-expand-in' : undefined}
+                  className={`scroll-mt-20 ${aboutYouRevealing ? 'grid animate-expand-in' : ''}`}
                   onAnimationEnd={(event) => event.target === event.currentTarget && setAboutYouRevealing(false)}
                 >
                   <div className={aboutYouRevealing ? 'min-h-0 overflow-hidden' : undefined}>
