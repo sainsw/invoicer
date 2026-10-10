@@ -83,20 +83,20 @@ export function CurrencyPicker({ selectedSymbol, onSelect }: CurrencyPickerProps
     <div className="space-y-2">
       <div className="relative">
         <div
-          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 rounded-l-2xl bg-gradient-to-r from-white via-white to-transparent opacity-0 shadow-[inset_16px_0_18px_-12px_rgba(15,23,42,0.25)] transition-opacity duration-300 ease-out dark:from-slate-950 dark:via-slate-950 dark:to-transparent dark:shadow-[inset_16px_0_18px_-12px_rgba(255,255,255,0.16)]"
+          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 rounded-l-md bg-gradient-to-r from-sheet via-sheet to-transparent opacity-0 transition-opacity duration-300 ease-out"
           style={{ opacity: edgeShadows.left ? 1 : 0 }}
         />
         <div
-          className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 rounded-r-2xl bg-gradient-to-l from-white via-white to-transparent opacity-0 shadow-[inset_-16px_0_18px_-12px_rgba(15,23,42,0.25)] transition-opacity duration-300 ease-out dark:from-slate-950 dark:via-slate-950 dark:to-transparent dark:shadow-[inset_-16px_0_18px_-12px_rgba(255,255,255,0.16)]"
+          className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 rounded-r-md bg-gradient-to-l from-sheet via-sheet to-transparent opacity-0 transition-opacity duration-300 ease-out"
           style={{ opacity: edgeShadows.right ? 1 : 0 }}
         />
         <div
           ref={scrollAreaRef}
-          className="relative overflow-x-auto overflow-y-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/15 dark:bg-black/30 dark:shadow-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="relative overflow-x-auto overflow-y-hidden rounded-md border border-rule bg-sheet [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           <div ref={containerRef} className="relative min-w-max">
             <div
-              className="absolute inset-y-0 rounded-2xl bg-slate-900/5 transition-all duration-200 dark:bg-white/20"
+              className="absolute inset-y-0 rounded-md bg-ink/[0.06] transition-all duration-200"
               style={{
                 width: indicator.width,
                 left: indicator.left,
@@ -104,7 +104,7 @@ export function CurrencyPicker({ selectedSymbol, onSelect }: CurrencyPickerProps
               }}
             />
             <div
-              className="grid text-center text-sm font-semibold text-slate-600 dark:text-white"
+              className="grid text-center text-sm font-semibold text-ink-2"
               style={{ gridTemplateColumns: `repeat(${currencyOptions.length}, minmax(64px, 1fr))` }}
             >
               {currencyOptions.map((option, index) => {
@@ -115,8 +115,8 @@ export function CurrencyPicker({ selectedSymbol, onSelect }: CurrencyPickerProps
                     key={option.code}
                     className={`relative z-10 min-w-[64px] px-2 py-3 transition ${
                       isActive
-                        ? 'text-slate-900 dark:text-white'
-                        : 'text-slate-500 hover:text-slate-900 dark:text-white/60 dark:hover:text-white'
+                        ? 'text-ink'
+                        : 'text-ink-2 hover:text-ink'
                     }`}
                     onClick={() => {
                       onSelect(option.symbol);
@@ -137,8 +137,8 @@ export function CurrencyPicker({ selectedSymbol, onSelect }: CurrencyPickerProps
           </div>
         </div>
       </div>
-      <p className="text-xs text-slate-500 dark:text-slate-400">
-        Tap a popular currency symbol or type a custom one below.
+      <p className="text-[13px] text-ink-2">
+        Choose your currency, or type a different symbol below.
       </p>
     </div>
   );

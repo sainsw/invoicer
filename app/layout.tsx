@@ -1,9 +1,12 @@
 import type { Metadata } from 'next';
-import { Plus_Jakarta_Sans } from 'next/font/google';
+import { Red_Hat_Display, Red_Hat_Mono, Red_Hat_Text } from 'next/font/google';
 import { Footer } from '@/components/Footer';
 import './globals.css';
 
-const jakarta = Plus_Jakarta_Sans({ subsets: ['latin'], variable: '--font-sans', display: 'swap' });
+// One matched family: Display for headings and the total, Text for everything else, Mono for figures.
+const display = Red_Hat_Display({ subsets: ['latin'], variable: '--font-display', display: 'swap' });
+const sans = Red_Hat_Text({ subsets: ['latin'], variable: '--font-sans', display: 'swap' });
+const mono = Red_Hat_Mono({ subsets: ['latin'], variable: '--font-mono', display: 'swap' });
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://invoicer.ainsworth.dev';
 const siteName = 'Invoicer';
 const siteDescription =
@@ -58,14 +61,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={jakarta.variable}>
-      <body className="bg-[#f7f7fb] text-slate-900 antialiased dark:bg-[#0b1020] dark:text-slate-100">
-        <div className="relative min-h-screen">
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-[320px] bg-gradient-to-b from-brand-200/40 via-white/50 to-transparent blur-3xl dark:from-brand-400/10 dark:via-white/10" />
-          <div className="relative flex min-h-screen flex-col">
-            {children}
-            <Footer />
-          </div>
+    <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable}`}>
+      <body className="bg-paper text-ink antialiased">
+        <div className="relative z-[1] flex min-h-screen flex-col">
+          {children}
+          <Footer />
         </div>
       </body>
     </html>

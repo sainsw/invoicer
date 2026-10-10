@@ -65,7 +65,7 @@ export function PrideAvatar({ children, className = '', ringStep = 3 }: PrideAva
   if (!isPrideTime) {
     return (
       <div
-        className={`rounded-full ${ringStep < 3 ? 'ring-1 ring-slate-900/15 dark:ring-white/20' : 'ring-2 ring-slate-900/80 shadow-soft dark:ring-white/80 dark:shadow-black/30'} ${className}`}
+        className={`rounded-full ${ringStep < 3 ? 'ring-1 ring-ink/15' : 'ring-2 ring-ink/80'} ${className}`}
       >
         {children}
       </div>

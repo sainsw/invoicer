@@ -8,9 +8,9 @@ const copyrightYears =
 export function Footer() {
   return (
     <footer className="mx-auto w-full max-w-[1570px] px-4 pb-10 pt-4 sm:px-6 lg:px-8">
-      <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 border-t border-slate-200/80 pt-6 text-sm text-slate-500 dark:border-slate-800 dark:text-slate-400">
+      <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 border-t border-rule pt-6 text-sm text-ink-2">
         <a
-          className="inline-flex items-center gap-2 font-semibold text-slate-700 transition hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-400 dark:text-slate-200 dark:hover:text-white"
+          className="inline-flex items-center gap-2 font-medium text-ink transition hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
           href="https://ainsworth.dev"
           target="_blank"
           rel="noopener noreferrer"
@@ -36,7 +36,7 @@ export function Footer() {
             href="https://github.com/sainsw/invoicer"
             target="_blank"
             rel="noopener noreferrer"
-            className="underline-offset-4 hover:text-slate-900 hover:underline dark:hover:text-white"
+            className="underline-offset-4 hover:text-accent hover:underline"
           >
             Built
           </a>{' '}

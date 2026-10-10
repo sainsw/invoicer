@@ -3,6 +3,12 @@ import type { Expense, ExtraReference, InvoiceData, Settings, WorkBlock } from '
 
 export const SETTINGS_KEY = 'simpleInvoice.settings';
 export const INVOICE_KEY = 'simpleInvoice.lastInvoice';
+// Opt-in features still in early testing. Kept apart from Settings, whose type comes from @sainsw/invoice-pdf.
+export const LABS_KEY = 'simpleInvoice.labs';
+
+export type Labs = { accountsLink: boolean };
+
+export const defaultLabs = (): Labs => ({ accountsLink: false });
 
 export const DEFAULT_FILENAME_TEMPLATE = '[businessname]-[issuedate]-[invoicenumber]';
 

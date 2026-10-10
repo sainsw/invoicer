@@ -23,17 +23,17 @@ type Pending =
   | { kind: 'switching'; id: string };
 
 const chipBase =
-  'inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500';
+  'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
 const chipIdle =
-  `${chipBase} bg-white text-slate-700 ring-1 ring-slate-200 hover:-translate-y-0.5 hover:ring-slate-300 dark:bg-slate-900 dark:text-slate-200 dark:ring-slate-700 dark:hover:ring-slate-600`;
+  `${chipBase} bg-field text-ink ring-1 ring-edge hover:bg-well hover:ring-ink-2`;
 const chipActive =
-  `${chipBase} bg-slate-900 text-white ring-1 ring-slate-900 dark:bg-white dark:text-slate-900 dark:ring-white`;
+  `${chipBase} bg-ink text-sheet ring-1 ring-ink`;
 const chipDashed =
-  `${chipBase} border border-dashed border-slate-300 text-slate-600 hover:border-slate-400 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-white`;
+  `${chipBase} border border-dashed border-edge text-ink-2 hover:border-ink-2 hover:text-ink disabled:cursor-not-allowed disabled:opacity-50`;
 const linkButton =
-  'text-sm font-semibold text-brand-600 underline-offset-4 hover:underline dark:text-brand-300';
+  'text-sm font-semibold text-accent underline-offset-4 hover:underline';
 const mutedButton =
-  'text-sm font-semibold text-slate-500 underline-offset-4 hover:underline dark:text-slate-400';
+  'text-sm font-semibold text-ink-2 underline-offset-4 hover:underline';
 
 export function ClientChips({
   clients,
@@ -70,7 +70,7 @@ export function ClientChips({
 
   return (
     <div className="space-y-2">
-      <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Saved clients</p>
+      <p className="text-sm font-medium text-ink">Your saved clients</p>
       <div className="flex flex-wrap items-center gap-2">
         {clients.map((client) =>
           client.id === activeId ? (
@@ -78,7 +78,7 @@ export function ClientChips({
               {client.label}
               <button
                 type="button"
-                className="-my-1 -mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full text-base text-white/60 hover:bg-white/10 hover:text-white dark:text-slate-900/50 dark:hover:text-slate-900"
+                className="-my-1 -mr-2 inline-flex h-6 w-6 items-center justify-center rounded text-base text-sheet/60 hover:bg-sheet/15 hover:text-sheet"
                 onClick={() => setPending({ kind: 'deleting', id: client.id })}
                 aria-label={`Delete ${client.label}`}
               >
@@ -102,12 +102,12 @@ export function ClientChips({
           >
             <input
               autoFocus
-              aria-label="Client chip name"
-              className="w-40 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm text-slate-900 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+              aria-label="Short name for this client"
+              className="h-8 w-40 rounded-md border border-edge bg-sheet px-3 text-sm text-ink focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
               value={pending.label}
               onChange={(event) => setPending({ kind: 'naming', label: event.target.value })}
               onKeyDown={(event) => event.key === 'Escape' && setPending({ kind: 'none' })}
-              placeholder="e.g. PJ"
+              placeholder="Short name, e.g. PJ"
             />
             <button type="submit" className={linkButton} disabled={!pending.label.trim()}>
               Save
@@ -126,31 +126,31 @@ export function ClientChips({
             className={chipDashed}
             onClick={() => setPending({ kind: 'naming', label: suggestedName })}
             disabled={!suggestedName}
-            title={suggestedName ? undefined : 'Enter a client name first'}
+            title={suggestedName ? undefined : 'Type the client’s name first'}
           >
-            + Save as client
+            + Save this client
           </button>
         )}
 
         {active && isDirty && pending.kind === 'none' && (
           <button type="button" className={`${linkButton} animate-fade-in`} onClick={onUpdate}>
-            Update {active.label} with these details
+            Save changes to {active.label}
           </button>
         )}
       </div>
 
       {pending.kind === 'deleting' && (
-        <p className="animate-fade-in flex flex-wrap items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
-          Delete {labelFor(pending.id)}? The current invoice stays as it is.
+        <p className="animate-fade-in flex flex-wrap items-center gap-3 text-sm text-ink-2">
+          Remove {labelFor(pending.id)} from your saved clients? This invoice won’t change.
           <button
             type="button"
-            className="text-sm font-semibold text-rose-600 underline-offset-4 hover:underline dark:text-rose-300"
+            className="text-sm font-semibold text-danger underline-offset-4 hover:underline"
             onClick={() => {
               onDelete(pending.id);
               setPending({ kind: 'none' });
             }}
           >
-            Delete
+            Remove
           </button>
           <button type="button" className={mutedButton} onClick={() => setPending({ kind: 'none' })}>
             Cancel
@@ -159,8 +159,8 @@ export function ClientChips({
       )}
 
       {pending.kind === 'switching' && (
-        <p className="animate-fade-in flex flex-wrap items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
-          Replace the current unsaved invoice with {labelFor(pending.id)}?
+        <p className="animate-fade-in flex flex-wrap items-center gap-3 text-sm text-ink-2">
+          Switch to {labelFor(pending.id)}? What you’ve typed on this invoice will be replaced.
           <button
             type="button"
             className={linkButton}
@@ -169,7 +169,7 @@ export function ClientChips({
               setPending({ kind: 'none' });
             }}
           >
-            Replace
+            Switch
           </button>
           <button type="button" className={mutedButton} onClick={() => setPending({ kind: 'none' })}>
             Cancel
@@ -178,8 +178,8 @@ export function ClientChips({
       )}
 
       {clients.length === 0 && pending.kind === 'none' && (
-        <p className="text-xs text-slate-500 dark:text-slate-400">
-          Save this client to switch between clients in one click next time.
+        <p className="text-[13px] text-ink-2">
+          Save this client to fill in their details with one click next time.
         </p>
       )}
     </div>

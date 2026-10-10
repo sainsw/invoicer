@@ -22,6 +22,8 @@ interface SettingsDrawerProps {
   resolveFilenamePreview: (template: string) => string;
   currentNotes: string;
   onApplyNotesToInvoice: () => void;
+  accountsLinkEnabled: boolean;
+  onAccountsLinkChange: (enabled: boolean) => void;
 }
 
 export const SettingsDrawer = ({
@@ -36,6 +38,8 @@ export const SettingsDrawer = ({
   resolveFilenamePreview,
   currentNotes,
   onApplyNotesToInvoice,
+  accountsLinkEnabled,
+  onAccountsLinkChange,
 }: SettingsDrawerProps) => {
   const [isVisible, setIsVisible] = useState(open);
   const [isClosing, setIsClosing] = useState(false);
@@ -141,9 +145,9 @@ export const SettingsDrawer = ({
   };
 
   const fieldClass =
-    'w-full rounded-2xl border border-slate-200/80 bg-white/70 px-3.5 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-900/5 transition hover:border-slate-300 focus:border-brand-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-200 placeholder:text-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:shadow-black/20 dark:hover:border-slate-700 dark:focus:bg-slate-900';
+    'w-full rounded-md border border-edge bg-field px-3.5 py-2.5 text-[15px] text-ink transition hover:border-ink-2 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30 placeholder:text-ink-3';
   const colorFieldClass =
-    'color-input h-11 w-full cursor-pointer overflow-hidden rounded-2xl border border-slate-200/80 bg-white/70 p-1 shadow-sm shadow-slate-900/5 transition hover:border-slate-300 focus:border-brand-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-200 appearance-none dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/20 dark:hover:border-slate-700 dark:focus:bg-slate-900 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-xl [&::-webkit-color-swatch]:border-0';
+    'color-input h-11 w-full cursor-pointer overflow-hidden rounded-md border border-edge bg-field p-1 transition hover:border-rule-strong focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30 appearance-none [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-xl [&::-webkit-color-swatch]:border-0';
 
   const colorFields: Array<keyof Settings> = ['headerColor', 'bodyColor'];
   const field = (label: string, id: keyof Settings, multiline = false, placeholder?: string) => {
@@ -152,7 +156,7 @@ export const SettingsDrawer = ({
     const isBankDetails = id === 'bankDetails';
     return (
       <div className="space-y-1.5">
-        <label htmlFor={id} className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+        <label htmlFor={id} className="block text-sm font-medium text-ink">
           {label}
         </label>
         {multiline ? (
@@ -192,7 +196,7 @@ export const SettingsDrawer = ({
 
   return (
     <div
-      className={`fixed inset-0 z-20 flex justify-end bg-slate-900/50 backdrop-blur-sm ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`}
+      className={`fixed inset-0 z-20 flex justify-end bg-[rgb(18_14_10/0.5)] backdrop-blur-[2px] ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`}
       onClick={onClose}
       >
         <div
@@ -201,13 +205,13 @@ export const SettingsDrawer = ({
           aria-modal="true"
           aria-labelledby="settings-heading"
           tabIndex={-1}
-          className={`h-full w-full max-w-md overflow-y-auto bg-white px-6 py-8 shadow-2xl shadow-slate-900/30 transition-colors focus:outline-none ${isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'} sm:px-8 dark:bg-slate-950 dark:shadow-black/50`}
+          className={`h-full w-full max-w-md overflow-y-auto bg-sheet px-6 py-8 shadow-2xl transition-colors focus:outline-none ${isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'} sm:px-8`}
           onClick={(event) => event.stopPropagation()}
         >
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h2 id="settings-heading" className="text-2xl font-semibold text-slate-900 dark:text-white">Settings</h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Stored locally in your browser</p>
+            <h2 id="settings-heading" className="text-3xl font-extrabold tracking-[-0.035em] text-ink">Your details</h2>
+            <p className="text-sm text-ink-2">Kept on this computer only. Used on every invoice.</p>
           </div>
           <button className={buttonClasses.ghost} onClick={onClose}>
             Close
@@ -215,26 +219,26 @@ export const SettingsDrawer = ({
         </div>
 
         {reminderMessage && (
-          <div className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-100">
+          <div className="mt-4 rounded-md bg-warn-soft px-4 py-3 text-sm font-semibold text-warn-ink">
             {reminderMessage}
           </div>
         )}
 
         <div className="mt-6 flex flex-col gap-5">
-          {field('Business or trading name', 'businessName', false, 'Your name or company')}
-          {field('Business address', 'businessAddress', true, 'Street\nCity\nPostcode')}
+          {field('Your name or business name', 'businessName', false, 'e.g. Jane Smith Joinery')}
+          {field('Your address', 'businessAddress', true, 'Street\nTown\nPostcode')}
           {field('Email', 'email', false, 'you@example.com')}
           {field('Phone', 'phone', false, '+44 7700 900123')}
-          {field('Default client name', 'defaultClientName')}
-          {field('Default daily rate', 'defaultDailyRate')}
+          {field('Usual client (optional)', 'defaultClientName')}
+          {field('Your usual day rate', 'defaultDailyRate')}
           <div className="space-y-2">
             <div className="space-y-1.5">
-              <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Currency</p>
+              <p className="text-sm font-medium text-ink">Currency</p>
               <CurrencyPicker selectedSymbol={settings.currencySymbol} onSelect={handleCurrencySelect} />
             </div>
             <div className="space-y-1">
-              <label htmlFor="currencySymbol" className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                Custom symbol
+              <label htmlFor="currencySymbol" className="block text-sm font-medium text-ink">
+                Other symbol
               </label>
               <input
                 id="currencySymbol"
@@ -245,22 +249,22 @@ export const SettingsDrawer = ({
                 placeholder="£ or CHF"
               />
               {currencyIndex === -1 && (
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Custom value won&apos;t highlight above but will be used for totals and PDFs.
+                <p className="text-[13px] text-ink-2">
+                  This symbol will be used on your invoices.
                 </p>
               )}
             </div>
           </div>
-          {field('Default payment terms (days)', 'defaultPaymentTerms')}
-          {field('Bank or payment details', 'bankDetails', true)}
-          {field('Header background colour', 'headerColor')}
-          {field('Body background colour (below header)', 'bodyColor')}
+          {field('Days your client has to pay', 'defaultPaymentTerms')}
+          {field('How to pay you (bank details)', 'bankDetails', true)}
+          {field('Colour at the top of the invoice', 'headerColor')}
+          {field('Invoice background colour', 'bodyColor')}
           <div className="space-y-1.5">
-            <label htmlFor="defaultNotes" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-              Default notes
+            <label htmlFor="defaultNotes" className="block text-sm font-medium text-ink">
+              Your usual message
             </label>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Pre-fills the Notes field on new invoices. Plain text — no [tokens].
+            <p className="text-[13px] text-ink-2">
+              Added to the notes on each new invoice. You can still change it each time.
             </p>
             <textarea
               id="defaultNotes"
@@ -277,7 +281,7 @@ export const SettingsDrawer = ({
                 className={`${buttonClasses.secondary} w-full animate-fade-in`}
                 onClick={onApplyNotesToInvoice}
               >
-                Apply to current invoice
+                Use it on this invoice too
               </button>
             )}
           </div>
@@ -293,6 +297,28 @@ export const SettingsDrawer = ({
             fieldClass={fieldClass}
             buttonClasses={buttonClasses}
           />
+          <div className="space-y-2 border-t border-dashed border-rule-strong pt-5">
+            <p className="flex items-center gap-2 text-sm font-medium text-ink">
+              Try something new
+              <span className="rounded bg-warn-soft px-1.5 py-0.5 text-xs font-semibold text-warn-ink">Early testing</span>
+            </p>
+            <label className="flex items-start gap-3 text-sm text-ink">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-edge accent-[rgb(var(--accent))]"
+                checked={accountsLinkEnabled}
+                onChange={(event) => onAccountsLinkChange(event.target.checked)}
+              />
+              <span className="space-y-1">
+                <span className="block font-medium">Show a &ldquo;Track in Accounts&rdquo; button after downloading</span>
+                <span className="block text-[13px] text-ink-2">
+                  Accounts is a separate app for keeping track of which invoices have been paid. It&rsquo;s still
+                  being tested, so things may change or not work as expected. Pressing the button sends this
+                  invoice&rsquo;s details to Accounts.
+                </span>
+              </span>
+            </label>
+          </div>
         </div>
 
         <div className="mt-8 flex flex-wrap gap-3">
@@ -300,10 +326,10 @@ export const SettingsDrawer = ({
             Done
           </button>
           <button className={buttonClasses.secondary} onClick={onReset}>
-            Reset to defaults
+            Reset these details
           </button>
           <button className={buttonClasses.ghost} onClick={onClearAll}>
-            Clear stored data
+            Delete everything
           </button>
         </div>
       </div>
@@ -347,29 +373,29 @@ const ExtraReferencesEditor = ({ references, onChange, fieldClass, buttonClasses
   };
 
   const checkboxClass =
-    'h-4 w-4 rounded border-slate-300 text-brand-500 focus:ring-brand-300 dark:border-slate-700 dark:bg-slate-900';
+    'h-4 w-4 rounded border-edge accent-[rgb(var(--accent))] focus:ring-accent/30';
   const moveButtonClass =
-    'inline-flex h-7 w-7 items-center justify-center rounded-lg ring-1 ring-slate-200 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 hover:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-40 dark:ring-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:ring-slate-600';
+    'inline-flex h-7 w-7 items-center justify-center rounded ring-1 ring-edge text-xs font-semibold text-ink-2 transition hover:bg-well hover:ring-rule-strong disabled:cursor-not-allowed disabled:opacity-40';
 
   return (
     <div className="space-y-3">
       <div className="space-y-1">
-        <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Extra references</p>
-        <p className="text-xs text-slate-500 dark:text-slate-400">
-          Custom labelled references (e.g. UTR, Tax ID). The order below is the order shown in the PDF.
+        <p className="text-sm font-medium text-ink">Extra reference numbers</p>
+        <p className="text-[13px] text-ink-2">
+          Things like your tax reference (UTR) or company number. They appear on the invoice in this order.
         </p>
       </div>
 
       {references.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-slate-200 px-3 py-4 text-center text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
-          No extra references yet.
+        <p className="rounded-md border border-dashed border-rule px-3 py-4 text-center text-[13px] text-ink-2">
+          None added yet.
         </p>
       ) : (
         <ul className="space-y-2">
           {references.map((ref, index) => (
             <li
               key={ref.id}
-              className="space-y-2 rounded-2xl border border-slate-200/80 bg-white/70 p-3 shadow-sm shadow-slate-900/5 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/20"
+              className="space-y-2 rounded-md border border-edge bg-field p-3"
             >
               <div className="flex items-start gap-2">
                 <div className="flex flex-col gap-1">
@@ -398,22 +424,22 @@ const ExtraReferencesEditor = ({ references, onChange, fieldClass, buttonClasses
                     className={fieldClass}
                     value={ref.label}
                     onChange={(event) => updateRef(ref.id, { label: event.target.value })}
-                    placeholder="Label (e.g. UTR)"
-                    aria-label="Reference label"
+                    placeholder="Name, e.g. UTR"
+                    aria-label="Reference name"
                   />
                   <input
                     type="text"
                     className={fieldClass}
                     value={ref.value}
                     onChange={(event) => updateRef(ref.id, { value: event.target.value })}
-                    placeholder="Value"
-                    aria-label="Reference value"
+                    placeholder="Number"
+                    aria-label="Reference number"
                   />
                 </div>
               </div>
               <div className="flex flex-wrap items-center justify-between gap-3 pl-9">
                 <div className="flex flex-wrap gap-4">
-                  <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-300">
+                  <label className="inline-flex items-center gap-2 text-[13px] font-medium text-ink-2">
                     <input
                       type="checkbox"
                       className={checkboxClass}
@@ -422,7 +448,7 @@ const ExtraReferencesEditor = ({ references, onChange, fieldClass, buttonClasses
                     />
                     Show at top
                   </label>
-                  <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-300">
+                  <label className="inline-flex items-center gap-2 text-[13px] font-medium text-ink-2">
                     <input
                       type="checkbox"
                       className={checkboxClass}
@@ -434,7 +460,7 @@ const ExtraReferencesEditor = ({ references, onChange, fieldClass, buttonClasses
                 </div>
                 <button
                   type="button"
-                  className="text-xs font-semibold text-rose-600 hover:underline dark:text-rose-300"
+                  className="text-xs font-semibold text-danger hover:underline"
                   onClick={() => removeRef(ref.id)}
                 >
                   Remove
@@ -446,7 +472,7 @@ const ExtraReferencesEditor = ({ references, onChange, fieldClass, buttonClasses
       )}
 
       <button type="button" className={buttonClasses.secondary} onClick={addRef}>
-        + Add reference
+        + Add a reference
       </button>
     </div>
   );
@@ -570,13 +596,13 @@ const FilenameTemplateField = ({ value, onChange, resolvePreview, fieldClass }: 
 
   return (
     <div className="space-y-2">
-      <label htmlFor="filenameTemplate" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-        PDF filename template
+      <label htmlFor="filenameTemplate" className="block text-sm font-medium text-ink">
+        Invoice file name
       </label>
-      <p className="text-xs text-slate-500 dark:text-slate-400">
-        Use [tokens] (type <code className="rounded bg-slate-100 px-1 dark:bg-slate-800">[</code> for suggestions) mixed
-        with any literal text. <code className="rounded bg-slate-100 px-1 dark:bg-slate-800">.pdf</code> is added
-        automatically.
+      <p className="text-[13px] text-ink-2">
+        What your downloaded invoice is called. Tap a button below to add details like the invoice
+        number, or type <code className="rounded bg-well px-1">[</code> to see them all. &ldquo;.pdf&rdquo; is
+        added for you.
       </p>
       <div className="relative">
         <input
@@ -595,15 +621,15 @@ const FilenameTemplateField = ({ value, onChange, resolvePreview, fieldClass }: 
           autoComplete="off"
         />
         {autocomplete && matches.length > 0 && (
-          <ul className="absolute left-0 right-0 top-full z-30 mt-1 max-h-56 overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-lg shadow-slate-900/10 dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/40">
+          <ul className="absolute left-0 right-0 top-full z-30 mt-1 max-h-56 overflow-y-auto rounded-md border border-rule bg-sheet">
             {matches.map((token, index) => (
               <li key={token.id}>
                 <button
                   type="button"
                   className={`flex w-full items-start justify-between gap-3 px-3 py-2 text-left text-sm transition ${
                     index === autocomplete.selectedIndex
-                      ? 'bg-slate-100 dark:bg-slate-800'
-                      : 'hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                      ? 'bg-well'
+                      : 'hover:bg-well'
                   }`}
                   onMouseDown={(event) => {
                     event.preventDefault();
@@ -611,12 +637,12 @@ const FilenameTemplateField = ({ value, onChange, resolvePreview, fieldClass }: 
                   }}
                 >
                   <div className="flex flex-col">
-                    <span className="font-mono text-xs font-semibold text-slate-900 dark:text-white">
+                    <span className="font-mono text-xs font-semibold text-ink">
                       [{token.id}]
                     </span>
-                    <span className="text-xs text-slate-500 dark:text-slate-400">{token.description}</span>
+                    <span className="text-[13px] text-ink-2">{token.description}</span>
                   </div>
-                  <span className="shrink-0 text-xs font-medium text-slate-500 dark:text-slate-400">{token.label}</span>
+                  <span className="shrink-0 text-[13px] font-medium text-ink-2">{token.label}</span>
                 </button>
               </li>
             ))}
@@ -629,23 +655,23 @@ const FilenameTemplateField = ({ value, onChange, resolvePreview, fieldClass }: 
             key={token.id}
             type="button"
             onClick={() => insertToken(token.id)}
-            className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 font-mono text-[11px] font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+            className="inline-flex items-center gap-1 rounded border border-rule bg-well px-2 py-1 font-mono text-[11px] font-medium text-ink transition hover:border-rule-strong"
             title={token.description}
           >
             [{token.id}]
           </button>
         ))}
       </div>
-      <div className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-3 py-2 text-xs dark:bg-slate-900">
+      <div className="flex items-center justify-between gap-3 rounded-md bg-well px-3 py-2 text-xs">
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-slate-500 dark:text-slate-400">Preview</p>
-          <p className="break-all font-mono text-sm text-slate-900 dark:text-slate-100">{preview}</p>
+          <p className="font-semibold text-ink-2">Example</p>
+          <p className="break-all font-mono text-sm text-ink">{preview}</p>
         </div>
         {value !== DEFAULT_FILENAME_TEMPLATE && (
           <button
             type="button"
             onClick={() => onChange(DEFAULT_FILENAME_TEMPLATE)}
-            className="shrink-0 text-xs font-semibold text-slate-500 hover:underline dark:text-slate-300"
+            className="shrink-0 text-xs font-semibold text-ink-2 hover:underline"
           >
             Reset
           </button>

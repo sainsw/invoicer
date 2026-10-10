@@ -5,6 +5,8 @@ import type { ReactNode } from 'react';
 import { ClientChips } from '@/components/ClientChips';
 import { ExpensesTable } from '@/components/ExpensesTable';
 import { SettingsDrawer } from '@/components/SettingsDrawer';
+import { MonthPicker } from '@/components/MonthPicker';
+import { RollingNumber } from '@/components/RollingNumber';
 import { WorkBlocksTable } from '@/components/WorkBlocksTable';
 import { usePersistentState } from '@/hooks/usePersistentState';
 import { formatMoney } from '@/lib/format';
@@ -15,7 +17,9 @@ import {
   emptyExpense,
   emptyWorkBlock,
   INVOICE_KEY,
+  LABS_KEY,
   LEGACY_PLACEHOLDER_SETTINGS,
+  defaultLabs,
   SETTINGS_KEY,
 } from '@/lib/defaults';
 import {
@@ -49,13 +53,25 @@ const countWorkingDays = (startDate: string, endDate: string) => {
 const disablePdf = (blocks: ComputedWorkBlock[]) =>
   blocks.length === 0 || blocks.some((block) => block.hasError || block.days === 0);
 
-const cardClass =
-  'w-full rounded-3xl border border-slate-200/80 bg-white p-6 shadow-lg shadow-slate-900/5 transition-colors sm:p-8 dark:border-slate-800 dark:bg-slate-950 dark:shadow-none';
 const buttonBase =
-  'inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 disabled:cursor-not-allowed disabled:opacity-60';
-const buttonPrimary = `${buttonBase} bg-slate-900 text-white shadow-lg shadow-slate-900/10 ring-1 ring-slate-900 hover:-translate-y-0.5 hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:ring-white/70 dark:shadow-white/10 dark:hover:-translate-y-0.5 dark:hover:bg-slate-100`;
-const buttonSecondary = `${buttonBase} bg-white text-slate-900 ring-1 ring-slate-300 shadow-sm hover:-translate-y-0.5 hover:ring-slate-400 dark:bg-slate-900 dark:text-white dark:ring-slate-700`;
-const buttonGhost = `${buttonBase} bg-transparent text-slate-700 ring-1 ring-transparent hover:-translate-y-0.5 hover:ring-slate-200 dark:text-slate-200 dark:hover:ring-slate-700`;
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md px-4 py-2.5 text-sm font-semibold transition duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50';
+// The accent colour is reserved for the one action that matters: producing the invoice.
+const buttonAccent = `${buttonBase} bg-accent text-accent-ink shadow-[inset_0_-2px_0_rgb(0_0_0/0.18)] hover:bg-accent/90 active:translate-y-px`;
+const buttonInk = `${buttonBase} bg-ink text-sheet hover:bg-ink/85 active:translate-y-px`;
+const buttonSecondary = `${buttonBase} bg-sheet text-ink ring-1 ring-edge hover:bg-well hover:ring-ink-2`;
+// Compact variant for actions that sit on a section heading row, so they don't overhang the description.
+// Swap the padding rather than append it: two py-* classes on one element resolve by stylesheet order, not class order.
+const buttonSectionAction = buttonSecondary.replace('px-4 py-2.5', 'px-3 py-1.5');
+const buttonGhost = `${buttonBase} bg-transparent text-ink-2 hover:bg-well hover:text-ink`;
+const fieldClass =
+  'w-full min-w-0 rounded-md border border-edge bg-field px-3.5 py-2.5 text-[15px] text-ink transition hover:border-ink-2 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30 placeholder:text-ink-3';
+// Swap colours rather than append them, for the same reason as buttonSectionAction.
+const fieldErrorClass = fieldClass
+  .replace('border-edge', 'border-danger')
+  .replace('focus:border-accent', 'focus:border-danger')
+  .replace('focus:ring-accent/30', 'focus:ring-danger/25');
+const labelClass = 'block text-sm font-medium text-ink';
+const monoLabelClass = 'font-mono text-xs font-medium uppercase tracking-[0.08em] text-ink-2';
 
 const GearIcon = () => (
   <svg aria-hidden className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
@@ -71,7 +87,9 @@ const GearIcon = () => (
 export default function HomePage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showSettingsReminder, setShowSettingsReminder] = useState(false);
+  const [showDownloadedToast, setShowDownloadedToast] = useState(false);
   const [trackingLink, setTrackingLink] = useState<string | null>(null);
+  const [stamping, setStamping] = useState(false);
   // Below lg the summary sits under the whole form, so a sticky bar shows the total until it scrolls into view.
   const summaryRef = useRef<HTMLElement>(null);
   const [summaryBelowFold, setSummaryBelowFold] = useState(false);
@@ -94,6 +112,8 @@ export default function HomePage() {
     setValue: setClientsState,
     ready: clientsReady,
   } = usePersistentState(CLIENTS_KEY, defaultClientsState);
+
+  const { value: labs, setValue: setLabs } = usePersistentState(LABS_KEY, defaultLabs);
 
   const activeClient = clientsState.clients.find((client) => client.id === clientsState.activeId) ?? null;
   const activeClientDirty = activeClient ? profileDiffers(activeClient, invoice) : false;
@@ -141,6 +161,43 @@ export default function HomePage() {
   }, [computedBlocks, expenses, invoice.taxRate]);
 
   const usingPlaceholderSettings = !settings.businessName?.trim();
+
+  // First run: with no name, address or email saved, ask for them on the form itself ("About you")
+  // instead of blocking the first download on the settings panel. Decided once per page load, so the
+  // section doesn't vanish mid-typing; the details are only saved to settings on download.
+  const [aboutYou, setAboutYou] = useState<'pending' | 'show' | 'hide'>('pending');
+  const [aboutYouDraft, setAboutYouDraft] = useState<AboutYouDetails>({ businessName: '', businessAddress: '', email: '' });
+  const [aboutYouError, setAboutYouError] = useState(false);
+  // Safety net: closing the settings panel with no name saved brings "About you" in, animated.
+  const [aboutYouRevealing, setAboutYouRevealing] = useState(false);
+  const aboutYouRef = useRef<HTMLDivElement>(null);
+  const revealAboutYou = (from: Settings) => {
+    if (aboutYou === 'show') {
+      return;
+    }
+    setAboutYouDraft({ businessName: from.businessName, businessAddress: from.businessAddress, email: from.email });
+    setAboutYou('show');
+    setAboutYouRevealing(true);
+  };
+  useEffect(() => {
+    if (!aboutYouRevealing) {
+      return;
+    }
+    // Wait a frame so the section is in the DOM, then bring it into view.
+    const frame = requestAnimationFrame(() =>
+      aboutYouRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [aboutYouRevealing]);
+  const closeSettings = () => {
+    setSettingsOpen(false);
+    if (!settings.businessName.trim()) {
+      revealAboutYou(settings);
+    }
+  };
+  if (settingsReady && aboutYou === 'pending') {
+    setAboutYou(hasNoBusinessDetails(settings) ? 'show' : 'hide');
+  }
 
   const ready = settingsReady && invoiceReady && clientsReady;
 
@@ -444,17 +501,20 @@ export default function HomePage() {
     const invoiceDefaults = defaultInvoice(defaults);
     setInvoice(invoiceDefaults);
     setClientsState(defaultClientsState());
+    setLabs(defaultLabs());
     if (typeof window !== 'undefined') {
       window.localStorage.removeItem(SETTINGS_KEY);
       window.localStorage.removeItem(INVOICE_KEY);
       window.localStorage.removeItem(CLIENTS_KEY);
+      window.localStorage.removeItem(LABS_KEY);
     }
     setSettingsOpen(false);
+    revealAboutYou(defaults);
   };
 
   const confirmAndClearAll = () => {
     const message =
-      'Reset stored data? This will clear all saved settings and invoice details from this device.';
+      'Delete everything saved here? This removes your details, your saved clients and this invoice from this computer. It can’t be undone.';
     if (typeof window !== 'undefined' && !window.confirm(message)) {
       return;
     }
@@ -463,12 +523,34 @@ export default function HomePage() {
 
   const handleGenerate = () => {
     setShowSettingsReminder(false);
-    if (usingPlaceholderSettings) {
+    let pdfSettings = settings;
+    let pdfInvoice = invoice;
+    if (aboutYou === 'show') {
+      const entered = Object.fromEntries(
+        Object.entries(aboutYouDraft).filter(([, value]) => value.trim())
+      ) as Partial<AboutYouDetails>;
+      pdfSettings = { ...settings, ...entered };
+      if (!pdfSettings.businessName.trim()) {
+        setAboutYouError(true);
+        const nameField = document.getElementById('aboutBusinessName');
+        nameField?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        nameField?.focus({ preventScroll: true });
+        return;
+      }
+      setSettings(pdfSettings);
+      // New invoices default their payment-confirmation email to yours; fill it in if it was left blank.
+      if (!invoice.remittanceEmail?.trim() && entered.email) {
+        pdfInvoice = { ...invoice, remittanceEmail: entered.email };
+        setInvoice(pdfInvoice);
+      }
+    } else if (usingPlaceholderSettings) {
       setShowSettingsReminder(true);
       setSettingsOpen(true);
       return;
     }
-    generateInvoicePdf({ settings, invoice, lineItems: computedBlocks, totals });
+    generateInvoicePdf({ settings: pdfSettings, invoice: pdfInvoice, lineItems: computedBlocks, totals });
+    setShowDownloadedToast(true);
+    setTrackingLink(null);
 
     // Remember the rate actually billed so the client's next invoice starts from it.
     if (activeClient) {
@@ -481,6 +563,10 @@ export default function HomePage() {
       }));
     }
 
+    // "Track in Accounts" is opt-in (early testing): opening the link sends this invoice to another app.
+    if (!labs.accountsLink) {
+      return;
+    }
     // Build "Track in Accounts" link
     const dueDate = invoice.issueDate
       ? (() => {
@@ -521,135 +607,203 @@ export default function HomePage() {
 
   const disableGenerate = !ready || disablePdf(computedBlocks);
 
+  const generate = () => {
+    setStamping(true);
+    handleGenerate();
+  };
+
   return (
     <>
-    <main className="min-h-screen pb-12 pt-6 sm:pt-10">
-      <div className="mx-auto flex w-full max-w-[1570px] flex-col gap-6 px-4 sm:px-6 lg:px-8">
-        <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-3xl border border-slate-200/80 bg-white px-5 py-4 shadow-lg shadow-slate-900/5 transition-colors sm:px-8 sm:py-5 dark:border-slate-800 dark:bg-slate-950 dark:shadow-none">
-          <div className="min-w-0 space-y-0.5">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Invoicer 🧾</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              {ready ? 'Private and browser-based. Everything saves to this device automatically.' : 'Loading saved preferences…'}
+    <main className="pb-14 pt-6 sm:pt-10">
+      <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-8 px-4 sm:px-6 lg:px-10">
+        <header className="flex animate-rise-in items-end justify-between gap-4 border-b-2 border-ink pb-3">
+          <div className="min-w-0 space-y-2">
+            <h1 className="text-3xl font-extrabold leading-none tracking-[-0.04em] text-ink sm:text-4xl">
+              Invoicer<span className="text-accent">.</span>
+            </h1>
+            <p className="text-sm text-ink-2">
+              {ready ? 'Fill this in, then download your invoice ready to send. Everything you type stays on this computer and is never sent anywhere.' : 'Loading your details…'}
             </p>
           </div>
-          <button type="button" className={buttonSecondary} onClick={() => setSettingsOpen(true)}>
+          <button
+            type="button"
+            className={`${buttonSecondary} shrink-0 px-3 sm:px-4`}
+            onClick={() => setSettingsOpen(true)}
+            aria-label="Your details"
+          >
             <GearIcon />
-            Settings
+            <span className="hidden sm:inline">Your details</span>
           </button>
         </header>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <section className={`${cardClass} space-y-8`}>
-            <MetadataForm
-              invoice={invoice}
-              onChange={updateInvoice}
-              clientPicker={
-                <ClientChips
-                  clients={clientsState.clients}
-                  activeId={clientsState.activeId}
-                  suggestedName={invoice.clientName.trim()}
-                  isDirty={activeClientDirty}
-                  hasUnsavedDraft={!activeClient && Boolean(invoice.clientName.trim() || invoice.invoiceNumber.trim())}
-                  onSelect={selectClient}
-                  onNew={startNewClient}
-                  onSave={saveAsClient}
-                  onUpdate={updateActiveClient}
-                  onDelete={deleteClient}
+        <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="animate-rise-in rounded-[3px] bg-sheet px-5 py-7 shadow-sheet ring-1 ring-rule/70 [animation-delay:70ms] sm:px-10 sm:py-10">
+            <div className="space-y-8">
+              {aboutYou === 'show' && (
+                // While revealing, the grid wrapper animates open from zero height; the clip is dropped once
+                // it's done so field focus rings aren't cut off.
+                <div
+                  ref={aboutYouRef}
+                  className={aboutYouRevealing ? 'grid animate-expand-in' : undefined}
+                  onAnimationEnd={(event) => event.target === event.currentTarget && setAboutYouRevealing(false)}
+                >
+                  <div className={aboutYouRevealing ? 'min-h-0 overflow-hidden' : undefined}>
+                    <Section
+                      number="00"
+                      title="About you"
+                      description="This goes at the top of your invoice so your client knows who it’s from. It’s saved for next time when you download."
+                    >
+                      <AboutYouForm
+                        value={aboutYouDraft}
+                        showError={aboutYouError}
+                        onChange={(patch) => {
+                          setAboutYouDraft((prev) => ({ ...prev, ...patch }));
+                          if (patch.businessName?.trim()) {
+                            setAboutYouError(false);
+                          }
+                        }}
+                      />
+                    </Section>
+                  </div>
+                </div>
+              )}
+
+              <Section
+                number="01"
+                title="Who it’s for"
+                description={clientsState.clients.length > 0 ? 'Choose a saved client to fill this in for you, or type in someone new.' : undefined}
+              >
+                <ClientForm
+                  invoice={invoice}
+                  onChange={updateInvoice}
+                  clientsReady={clientsReady}
+                  hasSavedClients={clientsState.clients.length > 0}
+                  onSaveClient={saveAsClient}
+                  clientPicker={
+                    <ClientChips
+                      clients={clientsState.clients}
+                      activeId={clientsState.activeId}
+                      suggestedName={invoice.clientName.trim()}
+                      isDirty={activeClientDirty}
+                      hasUnsavedDraft={!activeClient && Boolean(invoice.clientName.trim() || invoice.invoiceNumber.trim())}
+                      onSelect={selectClient}
+                      onNew={startNewClient}
+                      onSave={saveAsClient}
+                      onUpdate={updateActiveClient}
+                      onDelete={deleteClient}
+                    />
+                  }
                 />
-              }
-            />
+              </Section>
 
-            <div className="space-y-3">
-              <div className="flex items-center justify-between gap-4">
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Work blocks</h3>
-                <button type="button" className={buttonSecondary} onClick={addWorkBlock}>
-                  + Add block
-                </button>
-              </div>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                Only Monday–Friday days count towards totals. Weekends are skipped, unless a block is entirely on a weekend.
-              </p>
-            </div>
+              <Section number="02" title="Invoice details" description="The month you pick is used to fill in the dates for your work below.">
+                <MetadataForm invoice={invoice} onChange={updateInvoice} />
+              </Section>
 
-            <WorkBlocksTable
-              blocks={computedBlocks}
-              currencySymbol={settings.currencySymbol}
-              onBlockChange={handleWorkBlockChange}
-              onRemove={removeBlock}
-              onDuplicate={duplicateBlock}
-              onReorder={reorderBlocks}
-            />
-
-            {computedBlocks.length > 1 && (
-              <div className="flex justify-center">
-                <button type="button" className={buttonSecondary} onClick={addWorkBlock}>
-                  + Add block
-                </button>
-              </div>
-            )}
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between gap-4">
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Expenses (optional)</h3>
-                <button type="button" className={buttonSecondary} onClick={addExpense}>
-                  + Add expense
-                </button>
-              </div>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                Expenses are added to the invoice subtotal before tax.
-              </p>
-            </div>
-
-            <ExpensesTable
-              expenses={expenses}
-              currencySymbol={settings.currencySymbol}
-              onExpenseChange={handleExpenseChange}
-              onRemove={removeExpense}
-              onReorder={reorderExpenses}
-            />
-
-            <div className="space-y-2">
-              <label htmlFor="notes" className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                Notes
-              </label>
-              <div className="relative">
-                <textarea
-                  id="notes"
-                  className="w-full min-h-[120px] rounded-3xl border border-slate-200/80 bg-white/70 px-4 py-3 pb-16 text-sm text-slate-900 shadow-sm shadow-slate-900/5 transition hover:border-slate-300 focus:border-brand-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:shadow-black/20 dark:hover:border-slate-700 dark:focus:bg-slate-900"
-                  value={invoice.notes}
-                  onChange={(event) => updateInvoice({ notes: event.target.value })}
-                  placeholder="Purchase orders, payment expectations, or a short thank-you message."
-                  rows={4}
-                />
-                {invoice.notes !== settings.defaultNotes && (
-                  <button
-                    type="button"
-                    className={`${buttonBase} animate-fade-in absolute bottom-3 right-3 bg-slate-100 text-slate-900 ring-1 ring-slate-300 shadow-sm hover:bg-slate-200 hover:ring-slate-400 dark:bg-slate-800 dark:text-white dark:ring-slate-600 dark:hover:bg-slate-700`}
-                    onClick={() => updateInvoice({ notes: settings.defaultNotes })}
-                  >
-                    Reset to default notes
+              <Section
+                number="03"
+                title="Work done"
+                description="Add each stretch of work with its dates and your day rate. Only weekdays are counted, unless the work was all at a weekend."
+                action={
+                  <button type="button" className={buttonSectionAction} onClick={addWorkBlock}>
+                    + Add work
                   </button>
-                )}
+                }
+              >
+                <WorkBlocksTable
+                  blocks={computedBlocks}
+                  currencySymbol={settings.currencySymbol}
+                  onBlockChange={handleWorkBlockChange}
+                  onRemove={removeBlock}
+                  onDuplicate={duplicateBlock}
+                  onReorder={reorderBlocks}
+                  bottomAction={
+                    <button type="button" className={buttonSecondary} onClick={addWorkBlock}>
+                      + Add work
+                    </button>
+                  }
+                />
+              </Section>
+
+              <Section
+                number="04"
+                title="Expenses"
+                description="Costs you’re passing on, like travel or materials. Leave this empty if there aren’t any."
+                action={
+                  <button type="button" className={buttonSectionAction} onClick={addExpense}>
+                    + Add expense
+                  </button>
+                }
+              >
+                <ExpensesTable
+                  expenses={expenses}
+                  currencySymbol={settings.currencySymbol}
+                  onExpenseChange={handleExpenseChange}
+                  onRemove={removeExpense}
+                  onReorder={reorderExpenses}
+                />
+              </Section>
+
+              <Section number="05" title="Notes" description="A short message printed on the invoice, such as a thank-you or an order number.">
+                <div className="relative">
+                  <textarea
+                    id="notes"
+                    aria-label="Notes"
+                    className={`${fieldClass} min-h-[120px] pb-14 leading-relaxed`}
+                    value={invoice.notes}
+                    onChange={(event) => updateInvoice({ notes: event.target.value })}
+                    placeholder="e.g. Thank you for your business."
+                    rows={4}
+                  />
+                  {invoice.notes !== settings.defaultNotes && (
+                    <button
+                      type="button"
+                      className={`${buttonSectionAction} absolute bottom-3 right-3 animate-fade-in`}
+                      onClick={() => updateInvoice({ notes: settings.defaultNotes })}
+                    >
+                      Use my usual message
+                    </button>
+                  )}
+                </div>
+              </Section>
+            </div>
+          </div>
+
+          <aside
+            ref={summaryRef}
+            aria-labelledby="summary-heading"
+            className="animate-rise-in [animation-delay:140ms] lg:sticky lg:top-6"
+          >
+            {/* The mask that punches the receipt edge also clips box-shadow, so the shadow is a filter on the wrapper. */}
+            <div className="[filter:drop-shadow(0_1px_1px_rgb(var(--shadow)/0.12))_drop-shadow(0_14px_18px_rgb(var(--shadow)/0.14))]">
+              <div className="perforated bg-sheet px-6 pb-10 pt-11">
+                <div className="flex items-baseline justify-between gap-3 border-b border-dashed border-rule-strong pb-4">
+                  <h2 id="summary-heading" className={monoLabelClass}>
+                    Summary
+                  </h2>
+                  <p className="truncate font-mono text-xs text-ink-2">
+                    {invoice.invoiceNumber.trim() ? `No. ${invoice.invoiceNumber.trim()}` : 'No invoice number yet'}
+                  </p>
+                </div>
+                <TotalsPanel
+                  totals={totals}
+                  taxRate={invoice.taxRate}
+                  setTaxRate={(taxRate) => updateInvoice({ taxRate })}
+                  currency={settings.currencySymbol}
+                />
+                <button
+                  className={`${buttonAccent.replace('py-2.5 text-sm', 'py-3.5 text-base')} mt-6 w-full ${stamping ? 'animate-stamp' : ''}`}
+                  onClick={generate}
+                  onAnimationEnd={() => setStamping(false)}
+                  disabled={disableGenerate}
+                >
+                  Download invoice
+                </button>
+                <p className="mt-3 text-center text-[13px] text-ink-2">
+                  {ready ? 'Saves a PDF you can email or print' : 'Loading your details…'}
+                </p>
               </div>
             </div>
-          </section>
-
-          <aside ref={summaryRef} aria-labelledby="summary-heading" className={`${cardClass} flex flex-col gap-6 lg:sticky lg:top-6 lg:self-start`}>
-            <h2 id="summary-heading" className="text-lg font-semibold text-slate-900 dark:text-white">
-              Summary
-            </h2>
-            <TotalsPanel
-              totals={totals}
-              taxRate={invoice.taxRate}
-              setTaxRate={(taxRate) => updateInvoice({ taxRate })}
-              currency={settings.currencySymbol}
-            />
-            <button className={buttonPrimary} onClick={handleGenerate} disabled={disableGenerate}>
-              Generate PDF
-            </button>
-            {!ready && (
-              <p className="text-sm text-slate-500 dark:text-slate-400">Please wait for your saved details to finish loading.</p>
-            )}
           </aside>
         </div>
       </div>
@@ -657,19 +811,26 @@ export default function HomePage() {
       <SettingsDrawer
         open={settingsOpen}
         settings={settings}
-        onClose={() => setSettingsOpen(false)}
+        onClose={closeSettings}
         onChange={handleSettingsChange}
         onReset={resetSettingsToDefaults}
         onClearAll={confirmAndClearAll}
-        buttonClasses={{ primary: buttonPrimary, secondary: buttonSecondary, ghost: buttonGhost }}
+        buttonClasses={{ primary: buttonInk, secondary: buttonSecondary, ghost: buttonGhost }}
         reminderMessage={
           showSettingsReminder && usingPlaceholderSettings
-            ? 'Add your business details before generating your first invoice.'
+            ? 'Before you download your first invoice, add your name and address so your client knows who it’s from.'
             : undefined
         }
         resolveFilenamePreview={(template) => resolveFilename(template, { settings, invoice, totals })}
         currentNotes={invoice.notes}
         onApplyNotesToInvoice={() => updateInvoice({ notes: settings.defaultNotes })}
+        accountsLinkEnabled={labs.accountsLink}
+        onAccountsLinkChange={(accountsLink) => {
+          setLabs((prev) => ({ ...prev, accountsLink }));
+          if (!accountsLink) {
+            setTrackingLink(null);
+          }
+        }}
       />
 
     </main>
@@ -678,43 +839,46 @@ export default function HomePage() {
       <div
         inert={!summaryBelowFold}
         aria-hidden={!summaryBelowFold}
-        className={`fixed inset-x-0 bottom-0 z-10 border-t border-slate-200/80 bg-white/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-8px_24px_rgba(15,23,42,0.06)] backdrop-blur transition-transform duration-200 lg:hidden dark:border-slate-800 dark:bg-slate-950/95 ${summaryBelowFold ? 'translate-y-0' : 'translate-y-full'}`}
+        className={`fixed inset-x-0 bottom-0 z-10 border-t border-rule bg-sheet/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-10px_30px_-12px_rgb(var(--shadow)/0.25)] backdrop-blur transition-transform duration-200 lg:hidden ${summaryBelowFold ? 'translate-y-0' : 'translate-y-full'}`}
       >
         <div className="mx-auto flex max-w-xl items-center justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              {totals.taxAmount > 0 ? 'Total incl. tax' : 'Total'}
-            </p>
-            <p className="truncate text-xl font-bold tabular-nums text-slate-900 dark:text-white">
+            <p className={monoLabelClass}>{totals.taxAmount > 0 ? 'Total incl. tax' : 'Total'}</p>
+            <p className="truncate font-display text-2xl font-extrabold tabular-nums tracking-tight text-ink">
               {formatMoney(settings.currencySymbol, totals.total)}
             </p>
           </div>
-          <button className={buttonPrimary} onClick={handleGenerate} disabled={disableGenerate}>
-            Generate PDF
+          <button className={buttonAccent} onClick={generate} disabled={disableGenerate}>
+            Download invoice
           </button>
         </div>
       </div>
 
-      {/* Track in Accounts toast — outside <main> to avoid transform/overflow ancestors breaking fixed positioning */}
-      {trackingLink && (
-        <div className={`fixed right-4 z-50 sm:right-6 ${summaryBelowFold ? 'bottom-24 lg:bottom-6' : 'bottom-6'} flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-white px-5 py-3 shadow-xl shadow-slate-900/10 animate-fade-in dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/30`}>
-          <p className="text-sm text-slate-700 dark:text-slate-200">PDF downloaded.</p>
-          <a
-            href={trackingLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-brand-600 dark:bg-brand-400 dark:text-slate-900 dark:hover:bg-brand-300"
-          >
-            Track in Accounts
-            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-            </svg>
-          </a>
+      {/* Download confirmation, with the opt-in Track in Accounts link — outside <main> to avoid transform/overflow ancestors breaking fixed positioning */}
+      {showDownloadedToast && (
+        <div className={`fixed right-4 z-50 sm:right-6 ${summaryBelowFold ? 'bottom-24 lg:bottom-6' : 'bottom-6'} flex animate-rise-in items-center gap-3 rounded-md bg-ink py-2.5 pl-4 pr-2.5 text-sheet shadow-lift`}>
+          <p className="text-sm">Your invoice has been downloaded.</p>
+          {trackingLink && labs.accountsLink && (
+            <a
+              href={trackingLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded bg-accent px-3 py-1.5 text-sm font-semibold text-accent-ink transition hover:bg-accent/90"
+            >
+              Track in Accounts
+              <svg aria-hidden className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+              </svg>
+            </a>
+          )}
           <button
             type="button"
             aria-label="Dismiss"
-            onClick={() => setTrackingLink(null)}
-            className="ml-1 rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+            onClick={() => {
+              setShowDownloadedToast(false);
+              setTrackingLink(null);
+            }}
+            className="rounded p-1 text-sheet/60 transition hover:bg-sheet/10 hover:text-sheet"
           >
             <svg aria-hidden className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
@@ -726,111 +890,299 @@ export default function HomePage() {
   );
 }
 
+function Section({
+  number,
+  title,
+  description,
+  action,
+  children,
+}: {
+  number: string;
+  title: string;
+  description?: string;
+  action?: ReactNode;
+  children: ReactNode;
+}) {
+  const headingId = `section-${number}`;
+  return (
+    <section aria-labelledby={headingId} className="space-y-5 border-t border-rule pt-6 first:border-t-0 first:pt-0">
+      {/* The action stays on the heading row at every width; the description runs underneath. */}
+      <div className="space-y-2.5">
+        <div className="flex items-center justify-between gap-4">
+          <h2 id={headingId} className="flex min-w-0 items-baseline gap-3">
+            <span className="font-mono text-sm font-medium text-accent">{number}</span>
+            <span className="text-xl font-bold tracking-[-0.02em] text-ink">{title}</span>
+          </h2>
+          {action && <div className="shrink-0">{action}</div>}
+        </div>
+        {description && <p className="max-w-[60ch] pl-[calc(2ch+0.75rem)] text-[15px] text-ink-2">{description}</p>}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function Field({ id, label, children, className = '' }: { id: string; label: string; children: ReactNode; className?: string }) {
+  return (
+    <div className={`space-y-1.5 ${className}`}>
+      <label htmlFor={id} className={labelClass}>
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
 function MetadataForm({
   invoice,
   onChange,
+}: {
+  invoice: InvoiceData;
+  onChange: (patch: Partial<InvoiceData>) => void;
+}) {
+  return (
+    <div className="grid items-end gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <Field id="invoiceNumber" label="Invoice number">
+        <input
+          id="invoiceNumber"
+          className={`${fieldClass} font-mono`}
+          value={invoice.invoiceNumber}
+          onChange={(event) => onChange({ invoiceNumber: event.target.value })}
+          placeholder="e.g. 14"
+        />
+      </Field>
+      <Field id="issueDate" label="Invoice date">
+        <input
+          type="date"
+          id="issueDate"
+          className={fieldClass}
+          value={invoice.issueDate}
+          onChange={(event) => onChange({ issueDate: event.target.value })}
+        />
+      </Field>
+      <Field id="purchaseOrder" label="Order number (optional)">
+        <input
+          id="purchaseOrder"
+          className={fieldClass}
+          value={invoice.purchaseOrder || ''}
+          onChange={(event) => onChange({ purchaseOrder: event.target.value })}
+          placeholder="e.g. PO-123, or a contact name"
+        />
+      </Field>
+      <Field id="invoiceMonth" label="Invoice month">
+        <MonthPicker
+          id="invoiceMonth"
+          value={invoice.invoiceMonth}
+          onChange={(invoiceMonth) => onChange({ invoiceMonth })}
+          fieldClass={fieldClass}
+        />
+      </Field>
+    </div>
+  );
+}
+
+type AboutYouDetails = Pick<Settings, 'businessName' | 'businessAddress' | 'email'>;
+
+const hasNoBusinessDetails = (settings: Settings) =>
+  (['businessName', 'businessAddress', 'email'] as const).every((key) => {
+    const value = (settings[key] || '').trim();
+    // Older versions stored sample text as real values; treat that as empty too.
+    return !value || value === LEGACY_PLACEHOLDER_SETTINGS[key];
+  });
+
+function AboutYouForm({
+  value,
+  showError,
+  onChange,
+}: {
+  value: AboutYouDetails;
+  showError: boolean;
+  onChange: (patch: Partial<AboutYouDetails>) => void;
+}) {
+  return (
+    <div className="grid gap-4 md:grid-cols-2">
+      <div className="space-y-4">
+        <Field id="aboutBusinessName" label="Your name or business name">
+          <input
+            id="aboutBusinessName"
+            className={showError ? fieldErrorClass : fieldClass}
+            value={value.businessName}
+            onChange={(event) => onChange({ businessName: event.target.value })}
+            placeholder="e.g. Jane Smith Joinery"
+            autoComplete="organization"
+            aria-invalid={showError}
+            aria-describedby={showError ? 'aboutBusinessNameError' : undefined}
+          />
+          {showError && (
+            <p id="aboutBusinessNameError" className="text-[13px] font-medium text-danger">
+              Add your name so your client knows who the invoice is from.
+            </p>
+          )}
+        </Field>
+        <Field id="aboutEmail" label="Your email">
+          <input
+            id="aboutEmail"
+            type="email"
+            className={fieldClass}
+            value={value.email}
+            onChange={(event) => onChange({ email: event.target.value })}
+            placeholder="you@example.com"
+            autoComplete="email"
+          />
+        </Field>
+      </div>
+      <Field id="aboutBusinessAddress" label="Your address" className="flex flex-col">
+        <textarea
+          id="aboutBusinessAddress"
+          className={`${fieldClass} min-h-[120px] flex-1 leading-relaxed`}
+          value={value.businessAddress}
+          onChange={(event) => onChange({ businessAddress: event.target.value })}
+          placeholder={'Street\nTown\nPostcode'}
+          autoComplete="street-address"
+        />
+      </Field>
+    </div>
+  );
+}
+
+// Everything a saved client profile stores lives here, so "Update client" maps to what's on screen.
+// The saved-clients picker stays hidden until there's at least one saved client; before that, leaving
+// the Client field with a name in it offers to save it instead.
+function ClientForm({
+  invoice,
+  onChange,
+  clientsReady,
+  hasSavedClients,
+  onSaveClient,
   clientPicker,
 }: {
   invoice: InvoiceData;
   onChange: (patch: Partial<InvoiceData>) => void;
+  clientsReady: boolean;
+  hasSavedClients: boolean;
+  onSaveClient: (label: string) => void;
   clientPicker: ReactNode;
 }) {
-  const fieldClass =
-    'w-full min-w-0 rounded-2xl border border-slate-200/80 bg-white/70 px-4 py-3 text-sm text-slate-900 shadow-sm shadow-slate-900/5 transition hover:border-slate-300 focus:border-brand-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-200 placeholder:text-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:shadow-black/20 dark:hover:border-slate-700 dark:focus:bg-slate-900';
+  const [savePrompt, setSavePrompt] = useState<string | null>(null);
+  const [declinedName, setDeclinedName] = useState<string | null>(null);
+  // Saved clients load after the first render; only animate the picker once they have, so it
+  // doesn't slide open on every page load.
+  const [pickerMotion, setPickerMotion] = useState(false);
+  useEffect(() => {
+    if (!clientsReady) {
+      return;
+    }
+    const frame = requestAnimationFrame(() => setPickerMotion(true));
+    return () => cancelAnimationFrame(frame);
+  }, [clientsReady]);
+
+  const showPicker = clientsReady && hasSavedClients;
+  const promptName = hasSavedClients ? null : savePrompt;
+
+  const offerSave = () => {
+    const name = invoice.clientName.trim();
+    if (!clientsReady || hasSavedClients || !name || name === declinedName) {
+      return;
+    }
+    setSavePrompt(name);
+  };
 
   return (
-    <div className="space-y-6">
-      {/* 2 columns: number · month / date · PO / email (wide). 3 columns: number · month · date / PO · email (wide). */}
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <div className="space-y-1.5">
-          <label htmlFor="invoiceNumber" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-            Invoice number
-          </label>
-          <input
-            id="invoiceNumber"
-            className={fieldClass}
-            value={invoice.invoiceNumber}
-            onChange={(event) => onChange({ invoiceNumber: event.target.value })}
-            placeholder="Invoice #14"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <label htmlFor="invoiceMonth" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-            Invoice month
-          </label>
-          <input
-            type="month"
-            id="invoiceMonth"
-            className={fieldClass}
-            value={invoice.invoiceMonth}
-            onChange={(event) => onChange({ invoiceMonth: event.target.value })}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <label htmlFor="issueDate" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-            Invoice date
-          </label>
-          <input
-            type="date"
-            id="issueDate"
-            className={fieldClass}
-            value={invoice.issueDate}
-            onChange={(event) => onChange({ issueDate: event.target.value })}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <label htmlFor="purchaseOrder" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-            Purchase order / contact
-          </label>
-          <input
-            id="purchaseOrder"
-            className={fieldClass}
-            value={invoice.purchaseOrder || ''}
-            onChange={(event) => onChange({ purchaseOrder: event.target.value })}
-            placeholder="PO-123 or Jane Doe"
-          />
-        </div>
-        <div className="space-y-1.5 md:col-span-2">
-          <label htmlFor="remittanceEmail" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-            Remittance email
-          </label>
-          <input
-            type="email"
-            id="remittanceEmail"
-            className={fieldClass}
-            value={invoice.remittanceEmail || ''}
-            onChange={(event) => onChange({ remittanceEmail: event.target.value })}
-            placeholder="accounts@yourcompany.com"
-          />
+    <div>
+      <div
+        inert={!showPicker}
+        aria-hidden={!showPicker}
+        className={`grid ${pickerMotion ? 'transition-[grid-template-rows,opacity] duration-300 ease-out' : ''} ${
+          showPicker ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+        }`}
+      >
+        {/* Negative margin + matching padding gives chip rings and focus outlines room inside the clip. */}
+        <div className="-m-1.5 min-h-0 overflow-hidden p-1.5">
+          <div className="pb-5">{clientPicker}</div>
         </div>
       </div>
-
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-1.5">
-          <label htmlFor="clientName" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-            Client
-          </label>
-          <input
-            id="clientName"
-            className={fieldClass}
-            value={invoice.clientName}
-            onChange={(event) => onChange({ clientName: event.target.value })}
-          />
-          <div className="pt-2">{clientPicker}</div>
+        <div className="space-y-4">
+          <Field id="clientName" label="Client name">
+            <div className="relative">
+              <input
+                id="clientName"
+                className={fieldClass}
+                value={invoice.clientName}
+                onChange={(event) => {
+                  setSavePrompt(null);
+                  onChange({ clientName: event.target.value });
+                }}
+                onBlur={offerSave}
+                placeholder="Client or company name"
+              />
+              {promptName && (
+                <div
+                  role="status"
+                  className="absolute bottom-full left-0 z-20 mb-2.5 w-max max-w-[min(20rem,calc(100vw-4rem))] animate-fade-in rounded-md bg-ink px-4 py-3 text-sheet shadow-lift"
+                  onKeyDown={(event) => event.key === 'Escape' && setSavePrompt(null)}
+                >
+                  <span aria-hidden className="absolute -bottom-1.5 left-5 h-3 w-3 rotate-45 bg-ink" />
+                  <p className="relative text-sm">
+                    Save <strong className="font-semibold">{promptName}</strong> for next time?
+                  </p>
+                  <div className="relative mt-2.5 flex gap-2">
+                    <button
+                      type="button"
+                      className="rounded bg-sheet px-3 py-1.5 text-[13px] font-semibold text-ink transition hover:bg-sheet/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                      onClick={() => {
+                        onSaveClient(promptName);
+                        setSavePrompt(null);
+                      }}
+                    >
+                      Save client
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded px-3 py-1.5 text-[13px] font-medium text-sheet/75 transition hover:bg-sheet/10 hover:text-sheet focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                      onClick={() => {
+                        setDeclinedName(promptName);
+                        setSavePrompt(null);
+                      }}
+                    >
+                      Not now
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </Field>
+          <Field id="remittanceEmail" label="Your email for payment confirmations">
+            <input
+              type="email"
+              id="remittanceEmail"
+              className={fieldClass}
+              value={invoice.remittanceEmail || ''}
+              onChange={(event) => onChange({ remittanceEmail: event.target.value })}
+              placeholder="you@example.com"
+            />
+          </Field>
         </div>
-        <div className="space-y-1.5">
-          <label htmlFor="clientAddress" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-            Client address
-          </label>
+        <Field id="clientAddress" label="Client address" className="flex flex-col">
           <textarea
             id="clientAddress"
-            className={`${fieldClass} min-h-[120px]`}
+            className={`${fieldClass} min-h-[120px] flex-1 leading-relaxed`}
             value={invoice.clientAddress}
             onChange={(event) => onChange({ clientAddress: event.target.value })}
-            placeholder={'Company name\nStreet\nCity, ZIP'}
+            placeholder={'Company name\nStreet\nCity, Postcode'}
           />
-        </div>
+        </Field>
       </div>
+    </div>
+  );
+}
+
+function ReceiptLine({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) {
+  return (
+    <div className={`flex items-baseline gap-2 text-[15px] ${strong ? 'font-semibold text-ink' : 'text-ink-2'}`}>
+      <span className="shrink-0">{label}</span>
+      <span aria-hidden className="leader" />
+      <span className="shrink-0 font-mono tabular-nums text-ink">{value}</span>
     </div>
   );
 }
@@ -846,60 +1198,49 @@ function TotalsPanel({
   setTaxRate: (tax: number) => void;
   currency: string;
 }) {
-  const rowClass = 'flex items-center justify-between gap-3 text-base tabular-nums text-slate-700 dark:text-slate-200';
   const showTaxLine = taxRate > 0 && totals.taxAmount > 0;
-  const showPreTaxLine = showTaxLine;
 
   return (
-    <div className="space-y-5">
-      <div className="space-y-2">
-        <label htmlFor="taxRate" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-          Tax / VAT percentage
+    <div>
+      <div className="flex items-center justify-between gap-3 border-b border-dashed border-rule-strong py-4">
+        <label htmlFor="taxRate" className={labelClass}>
+          VAT, if you charge it
         </label>
-        <input
-          type="number"
-          id="taxRate"
-          min={0}
-          className="w-full rounded-2xl border border-slate-200/80 bg-white/70 px-3.5 py-2.5 text-sm text-slate-900 shadow-sm shadow-slate-900/5 transition hover:border-slate-300 focus:border-brand-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:shadow-black/20 dark:hover:border-slate-700 dark:focus:bg-slate-900"
-          value={taxRate}
-          onChange={(event) => setTaxRate(Number(event.target.value) || 0)}
-        />
+        <div className="relative w-24">
+          <input
+            type="number"
+            id="taxRate"
+            min={0}
+            className={`${fieldClass.replace('py-2.5', 'py-2')} h-10 pr-7 text-right font-mono`}
+            value={taxRate}
+            onChange={(event) => setTaxRate(Number(event.target.value) || 0)}
+          />
+          <span aria-hidden className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center font-mono text-sm text-ink-2">
+            %
+          </span>
+        </div>
       </div>
-      <div className="space-y-3 rounded-2xl border border-slate-200/80 bg-slate-50 px-4 py-4 shadow-inner shadow-slate-900/5 dark:border-slate-800 dark:bg-slate-900 dark:shadow-none">
-        <div className={rowClass}>
-          <span>Work subtotal</span>
-          <strong className="text-lg text-slate-900 dark:text-white">
-            {formatMoney(currency, totals.workSubtotal)}
-          </strong>
-        </div>
-        <div className={rowClass}>
-          <span>Expenses</span>
-          <strong className="text-lg text-slate-900 dark:text-white">
-            {formatMoney(currency, totals.expensesSubtotal)}
-          </strong>
-        </div>
-        {showPreTaxLine && (
-          <div className={rowClass}>
-            <span>Subtotal before tax</span>
-            <strong className="text-lg text-slate-900 dark:text-white">
-              {formatMoney(currency, totals.preTaxSubtotal)}
-            </strong>
-          </div>
-        )}
+
+      <div className="space-y-2.5 border-b border-dashed border-rule-strong py-5">
+        <ReceiptLine label="Work" value={formatMoney(currency, totals.workSubtotal)} />
+        <ReceiptLine label="Expenses" value={formatMoney(currency, totals.expensesSubtotal)} />
         {showTaxLine && (
-          <div className={rowClass}>
-            <span>Tax</span>
-            <strong className="text-lg text-slate-900 dark:text-white">
-              {formatMoney(currency, totals.taxAmount)}
-            </strong>
-          </div>
+          <>
+            <ReceiptLine label="Subtotal" value={formatMoney(currency, totals.preTaxSubtotal)} strong />
+            <ReceiptLine label={`VAT ${taxRate}%`} value={formatMoney(currency, totals.taxAmount)} />
+          </>
         )}
-        <div className={`${rowClass} border-t border-slate-200 pt-3 text-lg font-semibold text-slate-900 dark:border-slate-700 dark:text-white`}>
-          <span>Total</span>
-          <strong className="text-2xl text-slate-900 dark:text-white">
-            {formatMoney(currency, totals.total)}
-          </strong>
-        </div>
+      </div>
+
+      <div className="pt-5">
+        <p className={monoLabelClass}>
+          {showTaxLine ? 'Total incl. tax' : 'Total due'}
+        </p>
+        <RollingNumber
+          value={formatMoney(currency, totals.total)}
+          className="mt-1 font-display text-[2.6rem] font-extrabold leading-none tracking-[-0.04em] text-ink"
+        />
+        <div aria-hidden className="mt-4 h-[5px] border-y border-ink" />
       </div>
     </div>
   );
