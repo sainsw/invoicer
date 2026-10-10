@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export const currencyOptions = [
   { code: 'USD', symbol: '$' },
@@ -16,130 +16,84 @@ export const currencyOptions = [
 interface CurrencyPickerProps {
   selectedSymbol: string;
   onSelect: (symbol: string) => void;
+  fieldClass: string;
 }
 
-export function CurrencyPicker({ selectedSymbol, onSelect }: CurrencyPickerProps) {
+const optionClass = (active: boolean) =>
+  `flex h-14 flex-col items-center justify-center rounded-md text-ink transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+    active ? 'bg-well ring-2 ring-ink' : 'ring-1 ring-edge hover:bg-well hover:ring-ink-2'
+  }`;
+
+export function CurrencyPicker({ selectedSymbol, onSelect, fieldClass }: CurrencyPickerProps) {
   const selectedIndex = currencyOptions.findIndex((option) => option.symbol === selectedSymbol);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const [indicator, setIndicator] = useState<{ width: number; left: number }>({ width: 0, left: 0 });
-  const [edgeShadows, setEdgeShadows] = useState<{ left: boolean; right: boolean }>({ left: false, right: false });
-
-  const scrollSelectedIntoView = useCallback(() => {
-    const button = buttonRefs.current[selectedIndex];
-    button?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-  }, [selectedIndex]);
-
-  const recalcIndicator = useCallback(() => {
-    if (selectedIndex < 0) {
-      setIndicator({ width: 0, left: 0 });
-      return;
-    }
-    const button = buttonRefs.current[selectedIndex];
-    if (!button) {
-      return;
-    }
-    setIndicator({
-      width: button.offsetWidth,
-      left: button.offsetLeft,
-    });
-  }, [selectedIndex]);
-
-  const recalcEdges = useCallback(() => {
-    const el = scrollAreaRef.current;
-    if (!el) return;
-    const { scrollLeft, scrollWidth, clientWidth } = el;
-    const maxScroll = Math.max(0, scrollWidth - clientWidth - 1);
-    setEdgeShadows({
-      left: scrollLeft > 1,
-      right: scrollLeft < maxScroll,
-    });
-  }, []);
-
-  useLayoutEffect(() => {
-    recalcIndicator();
-    recalcEdges();
-    scrollSelectedIntoView();
-  }, [selectedIndex, selectedSymbol, recalcEdges, recalcIndicator, scrollSelectedIntoView]);
+  // "Other" stays open once picked, even if the typed symbol happens to match one of the options.
+  const [otherChosen, setOtherChosen] = useState(false);
+  const otherActive = otherChosen || selectedIndex === -1;
+  const otherInputRef = useRef<HTMLInputElement>(null);
+  const focusOther = useRef(false);
 
   useEffect(() => {
-    window.addEventListener('resize', recalcIndicator);
-    return () => window.removeEventListener('resize', recalcIndicator);
-  }, [recalcIndicator]);
-
-  useEffect(() => {
-    const el = scrollAreaRef.current;
-    if (!el) return;
-    const handler = () => {
-      recalcEdges();
-      recalcIndicator();
-    };
-    el.addEventListener('scroll', handler);
-    return () => el.removeEventListener('scroll', handler);
-  }, [recalcEdges, recalcIndicator]);
+    if (otherActive && focusOther.current) {
+      focusOther.current = false;
+      otherInputRef.current?.select();
+    }
+  }, [otherActive]);
 
   return (
-    <div className="space-y-2">
-      <div className="relative">
-        <div
-          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 rounded-l-md bg-gradient-to-r from-sheet via-sheet to-transparent opacity-0 transition-opacity duration-300 ease-out"
-          style={{ opacity: edgeShadows.left ? 1 : 0 }}
-        />
-        <div
-          className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 rounded-r-md bg-gradient-to-l from-sheet via-sheet to-transparent opacity-0 transition-opacity duration-300 ease-out"
-          style={{ opacity: edgeShadows.right ? 1 : 0 }}
-        />
-        <div
-          ref={scrollAreaRef}
-          className="relative overflow-x-auto overflow-y-hidden rounded-md border border-rule bg-sheet [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        >
-          <div ref={containerRef} className="relative min-w-max">
-            <div
-              className="absolute inset-y-0 rounded-md bg-ink/[0.06] transition-all duration-200"
-              style={{
-                width: indicator.width,
-                left: indicator.left,
-                opacity: selectedIndex >= 0 ? 1 : 0,
+    <fieldset className="space-y-2">
+      <legend className="mb-1.5 text-sm font-medium text-ink">Currency</legend>
+      <div className="grid grid-cols-3 gap-2">
+        {currencyOptions.map((option, index) => {
+          const active = !otherActive && index === selectedIndex;
+          return (
+            <button
+              type="button"
+              key={option.code}
+              aria-pressed={active}
+              className={optionClass(active)}
+              onClick={() => {
+                setOtherChosen(false);
+                onSelect(option.symbol);
               }}
-            />
-            <div
-              className="grid text-center text-sm font-semibold text-ink-2"
-              style={{ gridTemplateColumns: `repeat(${currencyOptions.length}, minmax(64px, 1fr))` }}
             >
-              {currencyOptions.map((option, index) => {
-                const isActive = index === selectedIndex;
-                return (
-                  <button
-                    type="button"
-                    key={option.code}
-                    className={`relative z-10 min-w-[64px] px-2 py-3 transition ${
-                      isActive
-                        ? 'text-ink'
-                        : 'text-ink-2 hover:text-ink'
-                    }`}
-                    onClick={() => {
-                      onSelect(option.symbol);
-                      scrollSelectedIntoView();
-                    }}
-                    ref={(element) => {
-                      buttonRefs.current[index] = element;
-                    }}
-                  >
-                    <span aria-hidden="true" className="text-xl">
-                      {option.symbol}
-                    </span>
-                    <span className="sr-only">{option.code}</span>
-                  </button>
-                );
-              })}
-            </div>
+              <span className="text-lg font-semibold leading-tight">{option.symbol}</span>
+              {option.code !== option.symbol && (
+                <span className="text-[11px] font-medium text-ink-2">{option.code}</span>
+              )}
+            </button>
+          );
+        })}
+        <button
+          type="button"
+          aria-pressed={otherActive}
+          className={optionClass(otherActive)}
+          onClick={() => {
+            focusOther.current = true;
+            setOtherChosen(true);
+          }}
+        >
+          <span className="text-sm font-semibold">Other</span>
+        </button>
+      </div>
+      {otherActive && (
+        <div className="flex items-center gap-3 pt-1">
+          <label htmlFor="currencySymbol" className="text-sm font-medium text-ink">
+            Symbol
+          </label>
+          <div className="w-28">
+            <input
+              ref={otherInputRef}
+              id="currencySymbol"
+              type="text"
+              className={fieldClass}
+              value={selectedSymbol}
+              onChange={(event) => onSelect(event.target.value)}
+              placeholder="e.g. kr"
+              autoComplete="off"
+            />
           </div>
         </div>
-      </div>
-      <p className="text-[13px] text-ink-2">
-        Choose your currency, or type a different symbol below.
-      </p>
-    </div>
+      )}
+    </fieldset>
   );
 }

@@ -492,6 +492,11 @@ export default function HomePage() {
   };
 
   const resetSettingsToDefaults = () => {
+    const message =
+      'Reset your details? Your name, address, bank details and other settings go back to how they started. Saved clients and this invoice are kept.';
+    if (typeof window !== 'undefined' && !window.confirm(message)) {
+      return;
+    }
     setSettings(localeDefaultSettings());
   };
 

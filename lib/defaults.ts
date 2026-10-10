@@ -16,12 +16,21 @@ export const createWorkBlockId = () => `block-${Date.now()}-${Math.random().toSt
 export const createExpenseId = () => `expense-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 export const createExtraReferenceId = () => `ref-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
+export const BANK_DETAILS_EXAMPLE = `Account name: Jane Smith
+Sort code: 12-34-56
+Account number: 12345678`;
+
 // Sample values older versions stored as real settings; cleared on load so they show as placeholders instead.
 export const LEGACY_PLACEHOLDER_SETTINGS: Partial<Record<keyof Settings, string>> = {
   businessName: 'Your Name or Company',
   businessAddress: '123 Sample Street\nCity, Country',
   email: 'you@example.com',
   phone: '+00 1234 567890',
+  bankDetails: `Bank Name:
+Bank Address:
+Sort Code:
+Account Number:
+Account Holder Name (as shown on cheques):`,
 };
 
 export const defaultSettings = (): Settings => ({
@@ -33,11 +42,7 @@ export const defaultSettings = (): Settings => ({
   defaultDailyRate: 150,
   currencySymbol: FALLBACK_CURRENCY.symbol,
   defaultPaymentTerms: 14,
-  bankDetails: `Bank Name:
-Bank Address:
-Sort Code:
-Account Number:
-Account Holder Name (as shown on cheques):`,
+  bankDetails: '',
   headerColor: '#ffffff',
   bodyColor: '#ffffff',
   defaultNotes: 'Thank you for your business! Payment is appreciated within the agreed terms.',
