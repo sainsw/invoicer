@@ -164,18 +164,16 @@ export default function HomePage() {
 
   // First run: with no name, address or email saved, ask for them on the form itself ("About you")
   // instead of blocking the first download on the settings panel. Decided once per page load, so the
-  // section doesn't vanish mid-typing; the details are only saved to settings on download.
+  // section doesn't vanish mid-typing. It edits the same saved details as the settings panel.
   const [aboutYou, setAboutYou] = useState<'pending' | 'show' | 'hide'>('pending');
-  const [aboutYouDraft, setAboutYouDraft] = useState<AboutYouDetails>({ businessName: '', businessAddress: '', email: '' });
   const [aboutYouError, setAboutYouError] = useState(false);
   // Safety net: closing the settings panel with no name saved brings "About you" in, animated.
   const [aboutYouRevealing, setAboutYouRevealing] = useState(false);
   const aboutYouRef = useRef<HTMLDivElement>(null);
-  const revealAboutYou = (from: Settings) => {
+  const revealAboutYou = () => {
     if (aboutYou === 'show') {
       return;
     }
-    setAboutYouDraft({ businessName: from.businessName, businessAddress: from.businessAddress, email: from.email });
     setAboutYou('show');
     setAboutYouRevealing(true);
   };
@@ -192,7 +190,7 @@ export default function HomePage() {
   const closeSettings = () => {
     setSettingsOpen(false);
     if (!settings.businessName.trim()) {
-      revealAboutYou(settings);
+      revealAboutYou();
     }
   };
   if (settingsReady && aboutYou === 'pending') {
@@ -514,7 +512,7 @@ export default function HomePage() {
       window.localStorage.removeItem(LABS_KEY);
     }
     setSettingsOpen(false);
-    revealAboutYou(defaults);
+    revealAboutYou();
   };
 
   const confirmAndClearAll = () => {
@@ -528,24 +526,18 @@ export default function HomePage() {
 
   const handleGenerate = () => {
     setShowSettingsReminder(false);
-    let pdfSettings = settings;
     let pdfInvoice = invoice;
     if (aboutYou === 'show') {
-      const entered = Object.fromEntries(
-        Object.entries(aboutYouDraft).filter(([, value]) => value.trim())
-      ) as Partial<AboutYouDetails>;
-      pdfSettings = { ...settings, ...entered };
-      if (!pdfSettings.businessName.trim()) {
+      if (usingPlaceholderSettings) {
         setAboutYouError(true);
         const nameField = document.getElementById('aboutBusinessName');
         nameField?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         nameField?.focus({ preventScroll: true });
         return;
       }
-      setSettings(pdfSettings);
       // New invoices default their payment-confirmation email to yours; fill it in if it was left blank.
-      if (!invoice.remittanceEmail?.trim() && entered.email) {
-        pdfInvoice = { ...invoice, remittanceEmail: entered.email };
+      if (!invoice.remittanceEmail?.trim() && settings.email.trim()) {
+        pdfInvoice = { ...invoice, remittanceEmail: settings.email };
         setInvoice(pdfInvoice);
       }
     } else if (usingPlaceholderSettings) {
@@ -553,7 +545,7 @@ export default function HomePage() {
       setSettingsOpen(true);
       return;
     }
-    generateInvoicePdf({ settings: pdfSettings, invoice: pdfInvoice, lineItems: computedBlocks, totals });
+    generateInvoicePdf({ settings, invoice: pdfInvoice, lineItems: computedBlocks, totals });
     setShowDownloadedToast(true);
     setTrackingLink(null);
 
@@ -656,17 +648,12 @@ export default function HomePage() {
                     <Section
                       number="00"
                       title="About you"
-                      description="This goes at the top of your invoice so your client knows who it’s from. It’s saved for next time when you download."
+                      description="This goes at the top of your invoice so your client knows who it’s from. It’s saved on this computer as you type, and you can change it later in Your details."
                     >
                       <AboutYouForm
-                        value={aboutYouDraft}
-                        showError={aboutYouError}
-                        onChange={(patch) => {
-                          setAboutYouDraft((prev) => ({ ...prev, ...patch }));
-                          if (patch.businessName?.trim()) {
-                            setAboutYouError(false);
-                          }
-                        }}
+                        value={settings}
+                        showError={aboutYouError && usingPlaceholderSettings}
+                        onChange={(patch) => setSettings((prev) => ({ ...prev, ...patch }))}
                       />
                     </Section>
                   </div>
