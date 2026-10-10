@@ -315,7 +315,6 @@ export const SettingsDrawer = ({
           </SettingsSection>
 
           <SettingsSection id="settings-new" title="New invoices" description="Filled in for you each time you start one.">
-            {field('Usual client (optional)', 'defaultClientName')}
             <CurrencyPicker selectedSymbol={settings.currencySymbol} onSelect={handleCurrencySelect} fieldClass={fieldClass} />
             {numberField('Your usual day rate', 'defaultDailyRate', { prefix: settings.currencySymbol })}
             <div className="space-y-1.5">

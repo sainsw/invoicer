@@ -38,6 +38,7 @@ export const defaultSettings = (): Settings => ({
   businessAddress: '',
   email: '',
   phone: '',
+  // Unused: the app reopens on the last client instead. Kept because Settings requires it.
   defaultClientName: '',
   defaultDailyRate: 150,
   currencySymbol: FALLBACK_CURRENCY.symbol,
@@ -86,7 +87,7 @@ export const defaultInvoice = (settings: Settings): InvoiceData => {
     invoiceNumber: '',
     purchaseOrder: '',
     issueDate: today,
-    clientName: settings.defaultClientName || '',
+    clientName: '',
     clientAddress: '',
     remittanceEmail: settings.email || '',
     notes: settings.defaultNotes,
