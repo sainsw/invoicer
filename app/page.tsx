@@ -39,6 +39,7 @@ import {
   detectCurrencySymbol,
   resolveFilename,
   generateInvoicePdf,
+  parseISODate,
 } from '@sainsw/invoice-pdf';
 import type { ComputedWorkBlock, Expense, InvoiceData, Settings, WorkBlock } from '@sainsw/invoice-pdf';
 
@@ -124,6 +125,8 @@ export default function HomePage() {
   const { value: prompts, setValue: setPrompts } = usePersistentState(PROMPTS_KEY, defaultPrompts);
   // Asked once at download when there are no bank details; goes away as soon as some are added.
   const [bankNudge, setBankNudge] = useState(false);
+  // Shown at download when the invoice date is cleared; goes away once a date is picked.
+  const [issueDateError, setIssueDateError] = useState(false);
 
   const activeClient = clientsState.clients.find((client) => client.id === clientsState.activeId) ?? null;
   const activeClientDirty = activeClient ? profileDiffers(activeClient, invoice) : false;
@@ -171,6 +174,8 @@ export default function HomePage() {
   }, [computedBlocks, expenses, invoice.taxRate]);
 
   const usingPlaceholderSettings = !settings.businessName?.trim();
+  // A date input reports '' while it's cleared or only part-filled.
+  const issueDateMissing = Number.isNaN(parseISODate(invoice.issueDate).getTime());
 
   // First run: with no name, address or email saved, ask for them on the form itself ("About you")
   // instead of blocking the first download on the settings panel. Decided once per page load, so the
@@ -559,6 +564,13 @@ export default function HomePage() {
       setSettingsOpen(true);
       return;
     }
+    if (issueDateMissing) {
+      setIssueDateError(true);
+      const dateField = document.getElementById('issueDate');
+      dateField?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      dateField?.focus({ preventScroll: true });
+      return;
+    }
     // No bank details means the invoice doesn't say how to pay you. Ask once; "Download anyway" stops it asking.
     if (!skipBankCheck && !settings.bankDetails.trim() && !prompts.bankDetailsSkipped) {
       setBankNudge(true);
@@ -566,7 +578,7 @@ export default function HomePage() {
       return;
     }
     setBankNudge(false);
-    generateInvoicePdf({ settings, invoice: pdfInvoice, lineItems: computedBlocks, totals });
+    generateInvoicePdf({ settings, invoice: pdfInvoice, lineItems: computedBlocks, totals, dateLocale: 'en-GB' });
     setShowDownloadedToast(true);
     setTrackingLink(null);
 
@@ -724,7 +736,7 @@ export default function HomePage() {
               </Section>
 
               <Section number="02" title="Invoice details" description="The month you pick is used to fill in the dates for your work below.">
-                <MetadataForm invoice={invoice} onChange={updateInvoice} />
+                <MetadataForm invoice={invoice} onChange={updateInvoice} showDateError={issueDateError && issueDateMissing} />
               </Section>
 
               <Section
@@ -980,47 +992,58 @@ function Field({ id, label, children, className = '' }: { id: string; label: str
 function MetadataForm({
   invoice,
   onChange,
+  showDateError,
 }: {
   invoice: InvoiceData;
   onChange: (patch: Partial<InvoiceData>) => void;
+  showDateError: boolean;
 }) {
   return (
-    <div className="grid items-end gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <Field id="invoiceNumber" label="Invoice number">
-        <input
-          id="invoiceNumber"
-          className={`${fieldClass} font-mono`}
-          value={invoice.invoiceNumber}
-          onChange={(event) => onChange({ invoiceNumber: event.target.value })}
-          placeholder="e.g. 14"
-        />
-      </Field>
-      <Field id="issueDate" label="Invoice date">
-        <input
-          type="date"
-          id="issueDate"
-          className={fieldClass}
-          value={invoice.issueDate}
-          onChange={(event) => onChange({ issueDate: event.target.value })}
-        />
-      </Field>
-      <Field id="purchaseOrder" label="Order number (optional)">
-        <input
-          id="purchaseOrder"
-          className={fieldClass}
-          value={invoice.purchaseOrder || ''}
-          onChange={(event) => onChange({ purchaseOrder: event.target.value })}
-          placeholder="e.g. PO-123, or a contact name"
-        />
-      </Field>
-      <Field id="invoiceMonth" label="Invoice month">
-        <MonthPicker
-          id="invoiceMonth"
-          value={invoice.invoiceMonth}
-          onChange={(invoiceMonth) => onChange({ invoiceMonth })}
-          fieldClass={fieldClass}
-        />
-      </Field>
+    <div className="space-y-2">
+      <div className="grid items-end gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Field id="invoiceNumber" label="Invoice number">
+          <input
+            id="invoiceNumber"
+            className={`${fieldClass} font-mono`}
+            value={invoice.invoiceNumber}
+            onChange={(event) => onChange({ invoiceNumber: event.target.value })}
+            placeholder="e.g. 14"
+          />
+        </Field>
+        <Field id="issueDate" label="Invoice date">
+          <input
+            type="date"
+            id="issueDate"
+            className={showDateError ? fieldErrorClass : fieldClass}
+            value={invoice.issueDate}
+            onChange={(event) => onChange({ issueDate: event.target.value })}
+            aria-invalid={showDateError}
+            aria-describedby={showDateError ? 'issueDateError' : undefined}
+          />
+        </Field>
+        <Field id="purchaseOrder" label="Order number (optional)">
+          <input
+            id="purchaseOrder"
+            className={fieldClass}
+            value={invoice.purchaseOrder || ''}
+            onChange={(event) => onChange({ purchaseOrder: event.target.value })}
+            placeholder="e.g. PO-123, or a contact name"
+          />
+        </Field>
+        <Field id="invoiceMonth" label="Invoice month">
+          <MonthPicker
+            id="invoiceMonth"
+            value={invoice.invoiceMonth}
+            onChange={(invoiceMonth) => onChange({ invoiceMonth })}
+            fieldClass={fieldClass}
+          />
+        </Field>
+      </div>
+      {showDateError && (
+        <p id="issueDateError" className="text-[13px] font-medium text-danger">
+          Pick the invoice date. It&rsquo;s printed on the invoice and used to work out when payment is due.
+        </p>
+      )}
     </div>
   );
 }
