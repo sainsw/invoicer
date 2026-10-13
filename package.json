@@ -20,7 +20,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@sainsw/invoice-pdf": "^1.2.0",
-    "avatar-fetcher": "^0.1.0",
+    "avatar-fetcher": "^0.2.0",
     "jspdf": "^4.2.1",
     "next": "^16.0.7",
     "react": "^19.2.0",
