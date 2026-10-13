@@ -67,7 +67,7 @@ const rateInputClass = `${desktopInputClass} text-right`;
 const cardLabelClass = 'block text-sm font-medium text-ink';
 
 const dragHandleClass =
-  'inline-flex h-8 w-8 cursor-grab touch-none items-center justify-center rounded-sm text-ink-3 transition hover:bg-well hover:text-ink active:cursor-grabbing focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+  'inline-flex h-8 w-8 cursor-grab touch-none items-center justify-center rounded-sm text-ink-3 transition hover:bg-well hover:text-ink active:cursor-grabbing focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
 
 // Desktop grid: description, start, end, days, daily rate, block total, line total, options/drag handle.
 // Columns total 728px (description min 116 + dates 2 × 132) + 7 gaps of 6px = 770px, plus row padding (16px left so
@@ -81,11 +81,11 @@ const desktopMinWidthClass = 'min-w-[794px]';
 // The table hangs out into the section margins (see tableBleedClass), so it needs 34px less room
 // than its own 796px width.
 const TABLE_MIN_CONTAINER = 762;
-const tableViewClass = 'hidden [@container(min-width:762px)]:block';
-const cardViewClass = 'flex flex-col gap-4 [@container(min-width:762px)]:hidden';
+const tableViewClass = 'hidden @min-[762px]:block';
+const cardViewClass = 'flex flex-col gap-4 @min-[762px]:hidden';
 // Pull the table 17px out on both sides (border + 16px row padding on the left) so the first field lines
 // up with the fields above and the table sits centred on the sheet; the padding inside stays the same.
-const tableBleedClass = 'mx-[-17px]';
+const tableBleedClass = '-mx-[17px]';
 // The container query handles the first paint; once the width is measured that decides instead.
 const tableVisibility = (fits: boolean | null) => (fits === null ? tableViewClass : fits ? 'block' : 'hidden');
 const cardVisibility = (fits: boolean | null) => (fits === null ? cardViewClass : fits ? 'hidden' : 'flex flex-col gap-4');
@@ -602,7 +602,7 @@ export const WorkBlocksTable = (props: Props) => {
   const showBottomAction = Boolean(props.bottomAction) && props.blocks.length > bottomActionAfter;
 
   return (
-    <div ref={containerRef} className="@container [&>:not([hidden])~:not([hidden])]:mt-4">
+    <div ref={containerRef} className="@container flex flex-col gap-4">
       <DesktopView {...viewProps} />
       <MobileView {...viewProps} />
       {showBottomAction && <div className="flex justify-center">{props.bottomAction}</div>}

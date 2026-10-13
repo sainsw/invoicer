@@ -24,7 +24,7 @@ const placementClass: Record<Placement, string> = {
 };
 
 const itemClass =
-  'flex items-center gap-2 rounded-sm px-3 py-2 text-sm font-medium text-ink transition hover:bg-well focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent';
+  'flex items-center gap-2 rounded-sm px-3 py-2 text-sm font-medium text-ink transition hover:bg-well focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent';
 
 const dangerItemClass = itemClass
   .replace('text-ink', 'text-danger')

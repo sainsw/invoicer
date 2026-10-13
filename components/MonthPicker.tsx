@@ -56,7 +56,7 @@ const Chevron = ({ direction }: { direction: 'left' | 'right' }) => (
 );
 
 const navButtonClass =
-  'inline-flex h-9 w-9 items-center justify-center rounded-md text-ink-2 transition hover:bg-well hover:text-ink focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+  'inline-flex h-9 w-9 items-center justify-center rounded-md text-ink-2 transition hover:bg-well hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
 
 /**
  * A month-and-year picker that looks the same in every browser (Safari has no native month input).
@@ -214,7 +214,7 @@ export function MonthPicker({ id, value, onChange, fieldClass }: Props) {
                   aria-pressed={isSelected}
                   onClick={() => choose({ year: active.year, month })}
                   onFocus={() => setActive({ year: active.year, month })}
-                  className={`relative h-10 rounded-md text-sm font-medium transition focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                  className={`relative h-10 rounded-md text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                     isSelected ? 'bg-accent text-accent-ink' : 'text-ink hover:bg-well'
                   }`}
                 >
@@ -235,7 +235,7 @@ export function MonthPicker({ id, value, onChange, fieldClass }: Props) {
           <div className="mt-2 flex justify-end border-t border-rule pt-2">
             <button
               type="button"
-              className="rounded-md px-2.5 py-1.5 text-[13px] font-semibold text-accent transition hover:bg-well focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="rounded-md px-2.5 py-1.5 text-[13px] font-semibold text-accent transition hover:bg-well focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               onClick={() => choose(thisMonth())}
             >
               This month

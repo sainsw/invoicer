@@ -382,7 +382,7 @@ export const SettingsDrawer = ({
             <label className="flex items-start gap-3 text-sm text-ink">
               <input
                 type="checkbox"
-                className="mt-0.5 h-4 w-4 shrink-0 rounded-sm border-edge accent-[rgb(var(--accent))]"
+                className="mt-0.5 h-4 w-4 shrink-0 rounded-sm border-edge accent-accent"
                 checked={accountsLinkEnabled}
                 onChange={(event) => onAccountsLinkChange(event.target.checked)}
               />
@@ -477,7 +477,7 @@ const placementLabels: Record<ReferencePlacement, string> = {
 };
 
 const dragHandleClass =
-  'inline-flex h-8 w-8 cursor-grab touch-none items-center justify-center rounded-sm text-ink-3 transition hover:bg-well hover:text-ink active:cursor-grabbing focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+  'inline-flex h-8 w-8 cursor-grab touch-none items-center justify-center rounded-sm text-ink-3 transition hover:bg-well hover:text-ink active:cursor-grabbing focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
 
 const GripIcon = () => (
   <svg aria-hidden width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -610,7 +610,7 @@ const ReferenceRow = ({
       </div>
       <button
         type="button"
-        className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-sm text-ink-3 transition hover:bg-danger-soft hover:text-danger focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-sm text-ink-3 transition hover:bg-danger-soft hover:text-danger focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         onClick={onRemove}
         aria-label={`Remove ${name}`}
         title="Remove"

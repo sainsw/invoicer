@@ -4,9 +4,9 @@ import { Footer } from '@/components/Footer';
 import './globals.css';
 
 // One matched family: Display for headings and the total, Text for everything else, Mono for figures.
-const display = Red_Hat_Display({ subsets: ['latin'], variable: '--font-display', display: 'swap' });
-const sans = Red_Hat_Text({ subsets: ['latin'], variable: '--font-sans', display: 'swap' });
-const mono = Red_Hat_Mono({ subsets: ['latin'], variable: '--font-mono', display: 'swap' });
+const display = Red_Hat_Display({ subsets: ['latin'], variable: '--font-red-hat-display', display: 'swap' });
+const sans = Red_Hat_Text({ subsets: ['latin'], variable: '--font-red-hat-text', display: 'swap' });
+const mono = Red_Hat_Mono({ subsets: ['latin'], variable: '--font-red-hat-mono', display: 'swap' });
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://invoicer.ainsworth.dev';
 const siteName = 'Invoicer';
 const siteDescription =

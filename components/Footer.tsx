@@ -10,7 +10,7 @@ export function Footer() {
     <footer className="mx-auto w-full max-w-[1570px] px-4 pb-10 pt-4 sm:px-6 lg:px-8">
       <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 border-t border-rule pt-6 text-sm text-ink-2">
         <a
-          className="inline-flex items-center gap-2 font-medium text-ink transition hover:text-accent focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+          className="inline-flex items-center gap-2 font-medium text-ink transition hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
           href="https://ainsworth.dev"
           target="_blank"
           rel="noopener noreferrer"

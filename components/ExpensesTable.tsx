@@ -52,7 +52,7 @@ const tableInputClass =
   'w-full rounded-md border border-edge bg-field px-3.5 py-2.5 text-[15px] text-ink transition hover:border-ink-2 focus:border-accent focus:outline-hidden focus:ring-2 focus:ring-accent/30 placeholder:text-ink-3';
 
 const dragHandleClass =
-  'inline-flex h-8 w-8 cursor-grab touch-none items-center justify-center rounded-sm text-ink-3 transition hover:bg-well hover:text-ink active:cursor-grabbing focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+  'inline-flex h-8 w-8 cursor-grab touch-none items-center justify-center rounded-sm text-ink-3 transition hover:bg-well hover:text-ink active:cursor-grabbing focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
 
 // Desktop cells are narrow, so trim the horizontal padding (date inputs need ~118px at px-2.5).
 const desktopInputClass = tableInputClass.replace('px-3.5', 'px-2.5');
@@ -68,11 +68,11 @@ const desktopMinWidthClass = 'min-w-[442px]';
 // The table hangs out into the section margins (see tableBleedClass), so it needs 34px less room
 // than its own 796px width.
 const TABLE_MIN_CONTAINER = 762;
-const tableViewClass = 'hidden [@container(min-width:762px)]:block';
-const cardViewClass = 'flex flex-col gap-4 [@container(min-width:762px)]:hidden';
+const tableViewClass = 'hidden @min-[762px]:block';
+const cardViewClass = 'flex flex-col gap-4 @min-[762px]:hidden';
 // Pull the table 17px out on both sides (border + 16px row padding on the left) so the first field lines
 // up with the fields above and the table sits centred on the sheet; the padding inside stays the same.
-const tableBleedClass = 'mx-[-17px]';
+const tableBleedClass = '-mx-[17px]';
 // The container query handles the first paint; once the width is measured that decides instead.
 const tableVisibility = (fits: boolean | null) => (fits === null ? tableViewClass : fits ? 'block' : 'hidden');
 const cardVisibility = (fits: boolean | null) => (fits === null ? cardViewClass : fits ? 'hidden' : 'flex flex-col gap-4');
@@ -493,7 +493,7 @@ export const ExpensesTable = (props: Props) => {
   };
 
   return (
-    <div ref={containerRef} className="@container [&>:not([hidden])~:not([hidden])]:mt-4">
+    <div ref={containerRef} className="@container flex flex-col gap-4">
       <DesktopView {...viewProps} />
       <MobileView {...viewProps} />
     </div>

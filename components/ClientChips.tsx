@@ -23,7 +23,7 @@ type Pending =
   | { kind: 'switching'; id: string };
 
 const chipBase =
-  'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition duration-150 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+  'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
 const chipIdle =
   `${chipBase} bg-field text-ink ring-1 ring-edge hover:bg-well hover:ring-ink-2`;
 const chipActive =
