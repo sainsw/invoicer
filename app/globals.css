@@ -1,6 +1,179 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@custom-variant dark (@media (prefers-color-scheme: dark));
+
+/* next/font sets --font-display, --font-sans and --font-mono on <html>. Inline so each font-*
+   utility carries the whole stack rather than a theme variable that refers to itself. */
+@theme inline {
+  --font-display: var(--font-display), var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* Tailwind v4 gives each text-* size a unitless line-height, which children with their own
+   font size inherit as a ratio. v3 used fixed rem values, and the layout is built on those
+   (a text-[15px] field inside a text-sm table gets 20px, not 21.4px), so pin them back. */
+@theme {
+  --text-xs--line-height: 1rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl--line-height: 1.75rem;
+  --text-2xl--line-height: 2rem;
+  --text-3xl--line-height: 2.25rem;
+  --text-4xl--line-height: 2.5rem;
+}
+
+@theme {
+  --color-paper: rgb(var(--paper));
+  --color-sheet: rgb(var(--sheet));
+  --color-well: rgb(var(--well));
+  --color-field: rgb(var(--field));
+
+  --color-ink-2: rgb(var(--ink-2));
+  --color-ink-3: rgb(var(--ink-3));
+  --color-ink: rgb(var(--ink));
+
+  --color-rule: rgb(var(--rule));
+  --color-rule-strong: rgb(var(--rule-strong));
+
+  --color-edge: rgb(var(--edge));
+
+  --color-accent: rgb(var(--accent));
+  --color-accent-ink: rgb(var(--accent-ink));
+  --color-accent-soft: rgb(var(--accent-soft));
+
+  --color-danger: rgb(var(--danger));
+  --color-danger-soft: rgb(var(--danger-soft));
+
+  --color-warn-ink: rgb(var(--warn-ink));
+  --color-warn-soft: rgb(var(--warn-soft));
+
+  --shadow-sheet:
+    0 1px 0 rgb(var(--shadow) / 0.06), 0 1px 2px rgb(var(--shadow) / 0.08),
+    0 12px 32px -12px rgb(var(--shadow) / 0.18);
+  --shadow-lift:
+    0 2px 4px rgb(var(--shadow) / 0.1),
+    0 18px 40px -16px rgb(var(--shadow) / 0.3);
+
+  --animate-slide-in-right: slide-in-right 0.3s
+    cubic-bezier(0.25, 0.9, 0.3, 1.1) forwards;
+  --animate-slide-out-right: slide-out-right 0.25s
+    cubic-bezier(0.5, 0, 0.75, 0.75) forwards;
+  --animate-fade-in: fade-in 0.2s ease-out forwards;
+  --animate-fade-out: fade-out 0.2s ease-in forwards;
+  --animate-expand-in: expand-in 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-pop-in: pop-in 0.16s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-rise-in: rise-in 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-digit-roll: digit-roll 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-stamp: stamp 0.28s ease-out;
+
+  @keyframes slide-in-right {
+    0% {
+      transform: translateX(110%);
+      opacity: 0;
+    }
+    100% {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  @keyframes slide-out-right {
+    0% {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    100% {
+      transform: translateX(110%);
+      opacity: 0;
+    }
+  }
+  @keyframes fade-in {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+  @keyframes fade-out {
+    0% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+  @keyframes expand-in {
+    0% {
+      grid-template-rows: 0fr;
+      opacity: 0;
+    }
+    100% {
+      grid-template-rows: 1fr;
+      opacity: 1;
+    }
+  }
+  @keyframes pop-in {
+    0% {
+      opacity: 0;
+      transform: translateY(-4px) scale(0.98);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  @keyframes rise-in {
+    0% {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes digit-roll {
+    0% {
+      opacity: 0;
+      transform: translateY(0.55em);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes stamp {
+    0% {
+      transform: scale(1);
+    }
+    35% {
+      transform: scale(0.95) rotate(-0.6deg);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
 
 /* Design tokens: RGB triplets consumed by tailwind.config.js. Light is warm paper and ink with a
    navy accent; dark is the same palette after hours — carbon paper with cream type. */
@@ -54,18 +227,22 @@
   }
 }
 
-:root {
-  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+/* Element defaults sit in the base layer so a font-* utility still overrides them. Unlayered CSS
+   beats every Tailwind v4 utility regardless of specificity. */
+@layer base {
+  :root {
+    font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display), var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  }
 }
 
 body {
   @apply bg-paper text-ink antialiased;
-}
-
-h1,
-h2,
-h3 {
-  font-family: var(--font-display), var(--font-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
 /* Fine paper grain over the desk. Fixed so it doesn't scroll with content. */
@@ -117,10 +294,12 @@ input[type='month'] {
 }
 
 /* One height for every single-line field. Browsers size date inputs differently from text inputs
-   (Safari adds a few pixels), which knocked rows out of line. :where() keeps this at zero
-   specificity, so an h-* utility on a field still wins. */
-:where(input:not([type]), input[type='text'], input[type='email'], input[type='number'], input[type='date'], input[type='month']) {
-  height: 2.75rem;
+   (Safari adds a few pixels), which knocked rows out of line. It lives in the base layer so an h-*
+   utility on a field still wins. */
+@layer base {
+  :where(input:not([type]), input[type='text'], input[type='email'], input[type='number'], input[type='date'], input[type='month']) {
+    height: 2.75rem;
+  }
 }
 
 /* Safari pads the inner date text; strip it so dates sit on the same baseline as text fields. */
@@ -132,7 +311,6 @@ input::-webkit-datetime-edit-fields-wrapper {
 input::-webkit-date-and-time-value {
   text-align: left;
 }
-
 input[type='number'] {
   font-variant-numeric: tabular-nums;
 }

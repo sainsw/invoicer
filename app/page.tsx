@@ -58,7 +58,7 @@ const disablePdf = (blocks: ComputedWorkBlock[]) =>
   blocks.length === 0 || blocks.some((block) => block.hasError || block.days === 0);
 
 const buttonBase =
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md px-4 py-2.5 text-sm font-semibold transition duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50';
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md px-4 py-2.5 text-sm font-semibold transition duration-150 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50';
 // The accent colour is reserved for the one action that matters: producing the invoice.
 const buttonAccent = `${buttonBase} bg-accent text-accent-ink shadow-[inset_0_-2px_0_rgb(0_0_0/0.18)] hover:bg-accent/90 active:translate-y-px`;
 const buttonInk = `${buttonBase} bg-ink text-sheet hover:bg-ink/85 active:translate-y-px`;
@@ -70,7 +70,7 @@ const buttonGhost = `${buttonBase} bg-transparent text-ink-2 hover:bg-well hover
 // Second choice beside buttonSectionAction on a warning note, in the note's own ink.
 const buttonCompactQuiet = buttonGhost.replace('px-4 py-2.5', 'px-3 py-1.5').replace(' text-ink-2 ', ' text-warn-ink ');
 const fieldClass =
-  'w-full min-w-0 rounded-md border border-edge bg-field px-3.5 py-2.5 text-[15px] text-ink transition hover:border-ink-2 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30 placeholder:text-ink-3';
+  'w-full min-w-0 rounded-md border border-edge bg-field px-3.5 py-2.5 text-[15px] text-ink transition hover:border-ink-2 focus:border-accent focus:outline-hidden focus:ring-2 focus:ring-accent/30 placeholder:text-ink-3';
 // Swap colours rather than append them, for the same reason as buttonSectionAction.
 const fieldErrorClass = fieldClass
   .replace('border-edge', 'border-danger')
@@ -663,7 +663,7 @@ export default function HomePage() {
       <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-8 px-4 sm:px-6 lg:px-10">
         <header className="flex animate-rise-in items-end justify-between gap-4 border-b-2 border-ink pb-3">
           <div className="min-w-0 space-y-2">
-            <h1 className="text-3xl font-extrabold leading-none tracking-[-0.04em] text-ink sm:text-4xl">
+            <h1 className="text-3xl font-extrabold leading-none tracking-[-0.04em] text-ink sm:text-4xl sm:leading-10">
               Invoicer<span className="text-accent">.</span>
             </h1>
             <p className="text-sm text-ink-2">
@@ -815,7 +815,7 @@ export default function HomePage() {
             className="animate-rise-in [animation-delay:140ms] lg:sticky lg:top-6"
           >
             {/* The mask that punches the receipt edge also clips box-shadow, so the shadow is a filter on the wrapper. */}
-            <div className="[filter:drop-shadow(0_1px_1px_rgb(var(--shadow)/0.12))_drop-shadow(0_14px_18px_rgb(var(--shadow)/0.14))]">
+            <div className="filter-[drop-shadow(0_1px_1px_rgb(var(--shadow)/0.12))_drop-shadow(0_14px_18px_rgb(var(--shadow)/0.14))]">
               <div className="perforated bg-sheet px-6 pb-10 pt-11">
                 <div className="flex items-baseline justify-between gap-3 border-b border-dashed border-rule-strong pb-4">
                   <h2 id="summary-heading" className={monoLabelClass}>
@@ -896,7 +896,7 @@ export default function HomePage() {
       <div
         inert={!summaryBelowFold}
         aria-hidden={!summaryBelowFold}
-        className={`fixed inset-x-0 bottom-0 z-10 border-t border-rule bg-sheet/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-10px_30px_-12px_rgb(var(--shadow)/0.25)] backdrop-blur transition-transform duration-200 lg:hidden ${summaryBelowFold ? 'translate-y-0' : 'translate-y-full'}`}
+        className={`fixed inset-x-0 bottom-0 z-10 border-t border-rule bg-sheet/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-10px_30px_-12px_rgb(var(--shadow)/0.25)] backdrop-blur-sm transition-transform duration-200 lg:hidden ${summaryBelowFold ? 'translate-y-0' : 'translate-y-full'}`}
       >
         <div className="mx-auto flex max-w-xl items-center justify-between gap-4">
           <div className="min-w-0">
@@ -920,7 +920,7 @@ export default function HomePage() {
               href={trackingLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded bg-accent px-3 py-1.5 text-sm font-semibold text-accent-ink transition hover:bg-accent/90"
+              className="inline-flex items-center gap-1.5 rounded-sm bg-accent px-3 py-1.5 text-sm font-semibold text-accent-ink transition hover:bg-accent/90"
             >
               Track in Accounts
               <svg aria-hidden className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -935,7 +935,7 @@ export default function HomePage() {
               setShowDownloadedToast(false);
               setTrackingLink(null);
             }}
-            className="rounded p-1 text-sheet/60 transition hover:bg-sheet/10 hover:text-sheet"
+            className="rounded-sm p-1 text-sheet/60 transition hover:bg-sheet/10 hover:text-sheet"
           >
             <svg aria-hidden className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
@@ -1213,7 +1213,7 @@ function ClientForm({
                   <div className="relative mt-2.5 flex gap-2">
                     <button
                       type="button"
-                      className="rounded bg-sheet px-3 py-1.5 text-[13px] font-semibold text-ink transition hover:bg-sheet/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                      className="rounded-sm bg-sheet px-3 py-1.5 text-[13px] font-semibold text-ink transition hover:bg-sheet/90 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                       onClick={() => {
                         onSaveClient(promptName);
                         setSavePrompt(null);
@@ -1223,7 +1223,7 @@ function ClientForm({
                     </button>
                     <button
                       type="button"
-                      className="rounded px-3 py-1.5 text-[13px] font-medium text-sheet/75 transition hover:bg-sheet/10 hover:text-sheet focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                      className="rounded-sm px-3 py-1.5 text-[13px] font-medium text-sheet/75 transition hover:bg-sheet/10 hover:text-sheet focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                       onClick={() => {
                         setDeclinedName(promptName);
                         setSavePrompt(null);

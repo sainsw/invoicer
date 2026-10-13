@@ -20,7 +20,7 @@ interface CurrencyPickerProps {
 }
 
 const optionClass = (active: boolean) =>
-  `flex h-14 flex-col items-center justify-center rounded-md text-ink transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+  `flex h-14 flex-col items-center justify-center rounded-md text-ink transition focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
     active ? 'bg-well ring-2 ring-ink' : 'ring-1 ring-edge hover:bg-well hover:ring-ink-2'
   }`;
 

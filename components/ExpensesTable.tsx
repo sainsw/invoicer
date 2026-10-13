@@ -49,10 +49,10 @@ type RowExtras = {
 };
 
 const tableInputClass =
-  'w-full rounded-md border border-edge bg-field px-3.5 py-2.5 text-[15px] text-ink transition hover:border-ink-2 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30 placeholder:text-ink-3';
+  'w-full rounded-md border border-edge bg-field px-3.5 py-2.5 text-[15px] text-ink transition hover:border-ink-2 focus:border-accent focus:outline-hidden focus:ring-2 focus:ring-accent/30 placeholder:text-ink-3';
 
 const dragHandleClass =
-  'inline-flex h-8 w-8 cursor-grab touch-none items-center justify-center rounded text-ink-3 transition hover:bg-well hover:text-ink active:cursor-grabbing focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+  'inline-flex h-8 w-8 cursor-grab touch-none items-center justify-center rounded-sm text-ink-3 transition hover:bg-well hover:text-ink active:cursor-grabbing focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
 
 // Desktop cells are narrow, so trim the horizontal padding (date inputs need ~118px at px-2.5).
 const desktopInputClass = tableInputClass.replace('px-3.5', 'px-2.5');
@@ -69,13 +69,13 @@ const desktopMinWidthClass = 'min-w-[442px]';
 // than its own 796px width.
 const TABLE_MIN_CONTAINER = 762;
 const tableViewClass = 'hidden [@container(min-width:762px)]:block';
-const cardViewClass = 'space-y-4 [@container(min-width:762px)]:hidden';
+const cardViewClass = 'flex flex-col gap-4 [@container(min-width:762px)]:hidden';
 // Pull the table 17px out on both sides (border + 16px row padding on the left) so the first field lines
 // up with the fields above and the table sits centred on the sheet; the padding inside stays the same.
-const tableBleedClass = '-mx-[17px]';
+const tableBleedClass = 'mx-[-17px]';
 // The container query handles the first paint; once the width is measured that decides instead.
 const tableVisibility = (fits: boolean | null) => (fits === null ? tableViewClass : fits ? 'block' : 'hidden');
-const cardVisibility = (fits: boolean | null) => (fits === null ? cardViewClass : fits ? 'hidden' : 'space-y-4');
+const cardVisibility = (fits: boolean | null) => (fits === null ? cardViewClass : fits ? 'hidden' : 'flex flex-col gap-4');
 
 const GripIcon = () => (
   <svg
@@ -267,7 +267,7 @@ const SortableCard = ({
         <span className="mr-auto whitespace-nowrap pl-1 text-sm font-semibold text-ink">Expense {index + 1}</span>
         <button
           type="button"
-          className="inline-flex items-center rounded bg-danger-soft px-2.5 py-1 text-xs font-semibold text-danger transition hover:bg-danger-soft"
+          className="inline-flex items-center rounded-sm bg-danger-soft px-2.5 py-1 text-xs font-semibold text-danger transition hover:bg-danger-soft"
           onClick={() => onRemove(expense.id)}
         >
           Remove
@@ -493,7 +493,7 @@ export const ExpensesTable = (props: Props) => {
   };
 
   return (
-    <div ref={containerRef} className="space-y-4 [container-type:inline-size]">
+    <div ref={containerRef} className="@container [&>:not([hidden])~:not([hidden])]:mt-4">
       <DesktopView {...viewProps} />
       <MobileView {...viewProps} />
     </div>

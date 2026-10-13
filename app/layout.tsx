@@ -63,7 +63,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable}`}>
       <body className="bg-paper text-ink antialiased">
-        <div className="relative z-[1] flex min-h-screen flex-col">
+        <div className="relative z-1 flex min-h-screen flex-col">
           {children}
           <Footer />
         </div>

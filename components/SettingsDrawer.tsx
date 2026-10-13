@@ -183,7 +183,7 @@ export const SettingsDrawer = ({
   };
 
   const fieldClass =
-    'w-full rounded-md border border-edge bg-field px-3.5 py-2.5 text-[15px] text-ink transition hover:border-ink-2 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30 placeholder:text-ink-3';
+    'w-full rounded-md border border-edge bg-field px-3.5 py-2.5 text-[15px] text-ink transition hover:border-ink-2 focus:border-accent focus:outline-hidden focus:ring-2 focus:ring-accent/30 placeholder:text-ink-3';
 
   const textValue = (id: keyof Settings) => (settings[id] as string) || '';
 
@@ -211,7 +211,7 @@ export const SettingsDrawer = ({
       </label>
       <textarea
         id={id}
-        className={`${fieldClass} min-h-[120px] overflow-x-auto [field-sizing:content] ${preformatted ? 'whitespace-pre' : ''}`}
+        className={`${fieldClass} min-h-[120px] overflow-x-auto field-sizing-content ${preformatted ? 'whitespace-pre' : ''}`}
         value={textValue(id)}
         onChange={handleInput(id)}
         placeholder={placeholder}
@@ -241,7 +241,7 @@ export const SettingsDrawer = ({
           type="number"
           inputMode="numeric"
           min={0}
-          className={`w-full min-w-0 bg-transparent py-2.5 text-ink focus:outline-none ${affix.prefix ? 'pl-1.5' : 'pl-3.5'} ${affix.suffix ? 'pr-1.5' : 'pr-3.5'}`}
+          className={`w-full min-w-0 bg-transparent py-2.5 text-ink focus:outline-hidden ${affix.prefix ? 'pl-1.5' : 'pl-3.5'} ${affix.suffix ? 'pr-1.5' : 'pr-3.5'}`}
           value={String(settings[id])}
           onChange={handleInput(id)}
         />
@@ -265,7 +265,7 @@ export const SettingsDrawer = ({
           <input
             id={id}
             type="color"
-            className="h-8 w-10 shrink-0 cursor-pointer appearance-none rounded border-0 bg-transparent p-0 focus:outline-none [&::-moz-color-swatch]:rounded [&::-moz-color-swatch]:border [&::-moz-color-swatch]:border-edge [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded [&::-webkit-color-swatch]:border [&::-webkit-color-swatch]:border-edge"
+            className="h-8 w-10 shrink-0 cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 focus:outline-hidden [&::-moz-color-swatch]:rounded-sm [&::-moz-color-swatch]:border [&::-moz-color-swatch]:border-edge [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-sm [&::-webkit-color-swatch]:border [&::-webkit-color-swatch]:border-edge"
             value={value}
             onChange={handleInput(id)}
           />
@@ -286,7 +286,7 @@ export const SettingsDrawer = ({
           aria-modal="true"
           aria-labelledby="settings-heading"
           tabIndex={-1}
-          className={`h-full w-full max-w-md overflow-y-auto bg-sheet px-6 pb-8 shadow-2xl transition-colors focus:outline-none ${isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'} sm:px-8`}
+          className={`h-full w-full max-w-md overflow-y-auto bg-sheet px-6 pb-8 shadow-2xl transition-colors focus:outline-hidden ${isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'} sm:px-8`}
           onClick={(event) => event.stopPropagation()}
         >
         <div className="sticky top-0 z-20 -mx-6 flex items-start justify-between gap-4 border-b border-rule bg-sheet px-6 pb-4 pt-6 sm:-mx-8 sm:px-8">
@@ -377,12 +377,12 @@ export const SettingsDrawer = ({
           <SettingsSection
             id="settings-labs"
             title="Try something new"
-            badge={<span className="rounded bg-warn-soft px-1.5 py-0.5 text-xs font-semibold text-warn-ink">Early testing</span>}
+            badge={<span className="rounded-sm bg-warn-soft px-1.5 py-0.5 text-xs font-semibold text-warn-ink">Early testing</span>}
           >
             <label className="flex items-start gap-3 text-sm text-ink">
               <input
                 type="checkbox"
-                className="mt-0.5 h-4 w-4 shrink-0 rounded border-edge accent-[rgb(var(--accent))]"
+                className="mt-0.5 h-4 w-4 shrink-0 rounded-sm border-edge accent-[rgb(var(--accent))]"
                 checked={accountsLinkEnabled}
                 onChange={(event) => onAccountsLinkChange(event.target.checked)}
               />
@@ -477,7 +477,7 @@ const placementLabels: Record<ReferencePlacement, string> = {
 };
 
 const dragHandleClass =
-  'inline-flex h-8 w-8 cursor-grab touch-none items-center justify-center rounded text-ink-3 transition hover:bg-well hover:text-ink active:cursor-grabbing focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+  'inline-flex h-8 w-8 cursor-grab touch-none items-center justify-center rounded-sm text-ink-3 transition hover:bg-well hover:text-ink active:cursor-grabbing focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
 
 const GripIcon = () => (
   <svg aria-hidden width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -594,7 +594,7 @@ const ReferenceRow = ({
         <label className="flex items-center gap-1 pl-2.5 text-[13px] text-ink-2">
           Shows
           <select
-            className="min-w-0 cursor-pointer rounded bg-transparent py-0.5 pl-1 pr-0.5 text-[13px] font-medium text-ink transition hover:bg-well focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
+            className="min-w-0 cursor-pointer rounded-sm bg-transparent py-0.5 pl-1 pr-0.5 text-[13px] font-medium text-ink transition hover:bg-well focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/30"
             value={placement}
             onChange={(event) => onUpdate(placementPatch[event.target.value as ReferencePlacement])}
             aria-label={`Where ${name} shows on the invoice`}
@@ -610,7 +610,7 @@ const ReferenceRow = ({
       </div>
       <button
         type="button"
-        className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded text-ink-3 transition hover:bg-danger-soft hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-sm text-ink-3 transition hover:bg-danger-soft hover:text-danger focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         onClick={onRemove}
         aria-label={`Remove ${name}`}
         title="Remove"
@@ -860,7 +860,7 @@ const FilenameTemplateField = ({ value, onChange, resolvePreview, fieldClass }: 
           </p>
           <button
             type="button"
-            className="shrink-0 rounded px-2 py-1 text-sm font-semibold text-ink-2 transition hover:bg-sheet hover:text-ink"
+            className="shrink-0 rounded-sm px-2 py-1 text-sm font-semibold text-ink-2 transition hover:bg-sheet hover:text-ink"
             onClick={() => setEditing(true)}
           >
             Change
@@ -877,7 +877,7 @@ const FilenameTemplateField = ({ value, onChange, resolvePreview, fieldClass }: 
       </label>
       <p className="text-[13px] text-ink-2">
         What your downloaded invoice is called. Tap a button below to add details like the invoice
-        number, or type <code className="rounded bg-well px-1">[</code> to see them all. &ldquo;.pdf&rdquo; is
+        number, or type <code className="rounded-sm bg-well px-1">[</code> to see them all. &ldquo;.pdf&rdquo; is
         added for you.
       </p>
       <div className="relative">
@@ -932,7 +932,7 @@ const FilenameTemplateField = ({ value, onChange, resolvePreview, fieldClass }: 
             key={token.id}
             type="button"
             onClick={() => insertToken(token.id)}
-            className="inline-flex items-center gap-1 rounded border border-rule bg-well px-2 py-1 font-mono text-[11px] font-medium text-ink transition hover:border-rule-strong"
+            className="inline-flex items-center gap-1 rounded-sm border border-rule bg-well px-2 py-1 font-mono text-[11px] font-medium text-ink transition hover:border-rule-strong"
             title={token.description}
           >
             [{token.id}]

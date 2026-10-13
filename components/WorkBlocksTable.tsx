@@ -58,7 +58,7 @@ type RowExtras = {
 };
 
 const tableInputClass =
-  'w-full rounded-md border border-edge bg-field px-3.5 py-2.5 text-[15px] text-ink transition hover:border-ink-2 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30 placeholder:text-ink-3';
+  'w-full rounded-md border border-edge bg-field px-3.5 py-2.5 text-[15px] text-ink transition hover:border-ink-2 focus:border-accent focus:outline-hidden focus:ring-2 focus:ring-accent/30 placeholder:text-ink-3';
 // Desktop cells are narrow, so trim the horizontal padding (date inputs need ~118px at px-2.5).
 const desktopInputClass = tableInputClass.replace('px-3.5', 'px-2.5');
 const descriptionInputClass = `${desktopInputClass} min-w-0`;
@@ -67,7 +67,7 @@ const rateInputClass = `${desktopInputClass} text-right`;
 const cardLabelClass = 'block text-sm font-medium text-ink';
 
 const dragHandleClass =
-  'inline-flex h-8 w-8 cursor-grab touch-none items-center justify-center rounded text-ink-3 transition hover:bg-well hover:text-ink active:cursor-grabbing focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+  'inline-flex h-8 w-8 cursor-grab touch-none items-center justify-center rounded-sm text-ink-3 transition hover:bg-well hover:text-ink active:cursor-grabbing focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
 
 // Desktop grid: description, start, end, days, daily rate, block total, line total, options/drag handle.
 // Columns total 728px (description min 116 + dates 2 × 132) + 7 gaps of 6px = 770px, plus row padding (16px left so
@@ -82,13 +82,13 @@ const desktopMinWidthClass = 'min-w-[794px]';
 // than its own 796px width.
 const TABLE_MIN_CONTAINER = 762;
 const tableViewClass = 'hidden [@container(min-width:762px)]:block';
-const cardViewClass = 'space-y-4 [@container(min-width:762px)]:hidden';
+const cardViewClass = 'flex flex-col gap-4 [@container(min-width:762px)]:hidden';
 // Pull the table 17px out on both sides (border + 16px row padding on the left) so the first field lines
 // up with the fields above and the table sits centred on the sheet; the padding inside stays the same.
-const tableBleedClass = '-mx-[17px]';
+const tableBleedClass = 'mx-[-17px]';
 // The container query handles the first paint; once the width is measured that decides instead.
 const tableVisibility = (fits: boolean | null) => (fits === null ? tableViewClass : fits ? 'block' : 'hidden');
-const cardVisibility = (fits: boolean | null) => (fits === null ? cardViewClass : fits ? 'hidden' : 'space-y-4');
+const cardVisibility = (fits: boolean | null) => (fits === null ? cardViewClass : fits ? 'hidden' : 'flex flex-col gap-4');
 
 const GripIcon = () => (
   <svg
@@ -316,14 +316,14 @@ const SortableCard = ({
         <div className="flex gap-1.5 text-xs font-semibold">
           <button
             type="button"
-            className="inline-flex items-center rounded bg-well px-2.5 py-1 text-ink ring-1 ring-rule transition hover:ring-rule-strong"
+            className="inline-flex items-center rounded-sm bg-well px-2.5 py-1 text-ink ring-1 ring-rule transition hover:ring-rule-strong"
             onClick={() => onDuplicate(block.id)}
           >
             Copy
           </button>
           <button
             type="button"
-            className="inline-flex items-center rounded bg-danger-soft px-2.5 py-1 text-danger transition hover:ring-1 hover:ring-danger/40"
+            className="inline-flex items-center rounded-sm bg-danger-soft px-2.5 py-1 text-danger transition hover:ring-1 hover:ring-danger/40"
             onClick={() => onRemove(block.id)}
           >
             Remove
@@ -393,7 +393,7 @@ const SortableCard = ({
         </div>
       </div>
 
-      <div className="flex items-center justify-between rounded bg-well px-4 py-3 font-mono text-sm font-medium text-ink">
+      <div className="flex items-center justify-between rounded-sm bg-well px-4 py-3 font-mono text-sm font-medium text-ink">
         <span className="tabular-nums">
           {block.days} {block.days === 1 ? 'working day' : 'working days'}
         </span>
@@ -602,7 +602,7 @@ export const WorkBlocksTable = (props: Props) => {
   const showBottomAction = Boolean(props.bottomAction) && props.blocks.length > bottomActionAfter;
 
   return (
-    <div ref={containerRef} className="space-y-4 [container-type:inline-size]">
+    <div ref={containerRef} className="@container [&>:not([hidden])~:not([hidden])]:mt-4">
       <DesktopView {...viewProps} />
       <MobileView {...viewProps} />
       {showBottomAction && <div className="flex justify-center">{props.bottomAction}</div>}

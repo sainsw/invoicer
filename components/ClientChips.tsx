@@ -23,7 +23,7 @@ type Pending =
   | { kind: 'switching'; id: string };
 
 const chipBase =
-  'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+  'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition duration-150 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
 const chipIdle =
   `${chipBase} bg-field text-ink ring-1 ring-edge hover:bg-well hover:ring-ink-2`;
 const chipActive =
@@ -78,7 +78,7 @@ export function ClientChips({
               {client.label}
               <button
                 type="button"
-                className="-my-1 -mr-2 inline-flex h-6 w-6 items-center justify-center rounded text-base text-sheet/60 hover:bg-sheet/15 hover:text-sheet"
+                className="-my-1 -mr-2 inline-flex h-6 w-6 items-center justify-center rounded-sm text-base text-sheet/60 hover:bg-sheet/15 hover:text-sheet"
                 onClick={() => setPending({ kind: 'deleting', id: client.id })}
                 aria-label={`Delete ${client.label}`}
               >
@@ -103,7 +103,7 @@ export function ClientChips({
             <input
               autoFocus
               aria-label="Short name for this client"
-              className="h-8 w-40 rounded-md border border-edge bg-sheet px-3 text-sm text-ink focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
+              className="h-8 w-40 rounded-md border border-edge bg-sheet px-3 text-sm text-ink focus:border-accent focus:outline-hidden focus:ring-2 focus:ring-accent/30"
               value={pending.label}
               onChange={(event) => setPending({ kind: 'naming', label: event.target.value })}
               onKeyDown={(event) => event.key === 'Escape' && setPending({ kind: 'none' })}
