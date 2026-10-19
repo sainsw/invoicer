@@ -189,9 +189,8 @@
     font-family: var(--font-display);
   }
 
-  /* One height for every single-line field. Browsers size date inputs differently from text
-     inputs (Safari adds a few pixels), which knocked rows out of line. */
-  :where(input:not([type]), input[type='text'], input[type='email'], input[type='number'], input[type='date'], input[type='month']) {
+  /* One height for every single-line field, so rows stay in line across browsers. */
+  :where(input:not([type]), input[type='text'], input[type='email'], input[type='number']) {
     height: 2.75rem;
   }
 }
@@ -237,31 +236,8 @@ body::before {
 }
 
 @layer base {
-  input[type='date'],
-  input[type='month'] {
-    min-width: 0;
-  }
-
-  /* Safari pads the inner date text; strip it so dates sit on the same baseline as text fields. */
-  input::-webkit-datetime-edit,
-  input::-webkit-datetime-edit-fields-wrapper {
-    padding: 0;
-  }
-
-  input::-webkit-date-and-time-value {
-    text-align: left;
-  }
-
   input[type='number'] {
     font-variant-numeric: tabular-nums;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    input[type='date']::-webkit-calendar-picker-indicator,
-    input[type='month']::-webkit-calendar-picker-indicator {
-      filter: invert(1);
-      opacity: 0.75;
-    }
   }
 }
 
@@ -276,12 +252,6 @@ body::before {
 }
 
 @supports (-webkit-touch-callout: none) {
-  input[type='date'],
-  input[type='month'] {
-    -webkit-appearance: none;
-    appearance: none;
-  }
-
   /* Prevent iOS from auto-zooming form fields by keeping font size at 16px */
   input,
   textarea,

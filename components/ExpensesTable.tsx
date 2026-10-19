@@ -9,6 +9,7 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
+import { DatePicker } from '@/components/DatePicker';
 import { closestCenterExcludingActive } from '@/lib/dnd';
 import {
   SortableContext,
@@ -54,14 +55,14 @@ const tableInputClass =
 const dragHandleClass =
   'inline-flex h-8 w-8 cursor-grab touch-none items-center justify-center rounded-sm text-ink-3 transition hover:bg-well hover:text-ink active:cursor-grabbing focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
 
-// Desktop cells are narrow, so trim the horizontal padding (date inputs need ~118px at px-2.5).
+// Desktop cells are narrow, so trim the horizontal padding (a date like "29 Oct 2026" with its icon needs ~130px at px-2.5).
 const desktopInputClass = tableInputClass.replace('px-3.5', 'px-2.5');
 
 // Desktop grid: date, notes, value, options/drag handle. 400px of columns + 3 gaps of 6px + px-2 → 434px.
 const cardLabelClass = 'block text-sm font-medium text-ink';
 
 const desktopGridClass =
-  'grid grid-cols-[124px_minmax(140px,1fr)_104px_32px] items-start gap-x-1.5';
+  'grid grid-cols-[132px_minmax(132px,1fr)_104px_32px] items-start gap-x-1.5';
 // Same 16px-left / 8px-right row padding as WorkBlocksTable.
 const desktopMinWidthClass = 'min-w-[442px]';
 // Same breakpoint as WorkBlocksTable so both lists switch layout together.
@@ -138,11 +139,11 @@ const SortableDesktopRow = ({
       className={`${desktopGridClass} ${desktopMinWidthClass} py-3 pl-4 pr-2 ${isLast ? '' : 'border-b border-rule'}`}
     >
       <div role="cell" className="text-ink-2">
-        <input
-          type="date"
-          className={desktopInputClass}
+        <DatePicker
+          fieldClass={desktopInputClass}
+          aria-label="Date"
           value={expense.date}
-          onChange={(event) => onExpenseChange(expense.id, { date: event.target.value })}
+          onChange={(date) => onExpenseChange(expense.id, { date })}
         />
       </div>
       <div role="cell" className="min-w-0">
@@ -287,12 +288,11 @@ const SortableCard = ({
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="min-w-0 space-y-1.5">
           <label htmlFor={`${fieldId}-date`} className={cardLabelClass}>Date</label>
-          <input
+          <DatePicker
             id={`${fieldId}-date`}
-            type="date"
-            className={tableInputClass}
+            fieldClass={tableInputClass}
             value={expense.date}
-            onChange={(event) => onExpenseChange(expense.id, { date: event.target.value })}
+            onChange={(date) => onExpenseChange(expense.id, { date })}
           />
         </div>
         <div className="min-w-0 space-y-1.5">

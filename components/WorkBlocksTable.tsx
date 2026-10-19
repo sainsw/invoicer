@@ -10,6 +10,7 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
+import { DatePicker } from '@/components/DatePicker';
 import { closestCenterExcludingActive } from '@/lib/dnd';
 import {
   SortableContext,
@@ -59,7 +60,7 @@ type RowExtras = {
 
 const tableInputClass =
   'w-full rounded-md border border-edge bg-field px-3.5 py-2.5 text-[15px] text-ink transition hover:border-ink-2 focus:border-accent focus:outline-hidden focus:ring-2 focus:ring-accent/30 placeholder:text-ink-3';
-// Desktop cells are narrow, so trim the horizontal padding (date inputs need ~118px at px-2.5).
+// Desktop cells are narrow, so trim the horizontal padding (a date like "29 Oct 2026" with its icon needs ~130px at px-2.5).
 const desktopInputClass = tableInputClass.replace('px-3.5', 'px-2.5');
 const descriptionInputClass = `${desktopInputClass} min-w-0`;
 const rateInputClass = `${desktopInputClass} text-right`;
@@ -169,19 +170,19 @@ const SortableDesktopRow = ({
         )}
       </div>
       <div role="cell" className="text-ink-2">
-        <input
-          type="date"
-          className={desktopInputClass}
+        <DatePicker
+          fieldClass={desktopInputClass}
+          aria-label="Start date"
           value={block.startDate}
-          onChange={(event) => onBlockChange(block.id, { startDate: event.target.value })}
+          onChange={(startDate) => onBlockChange(block.id, { startDate })}
         />
       </div>
       <div role="cell" className="text-ink-2">
-        <input
-          type="date"
-          className={desktopInputClass}
+        <DatePicker
+          fieldClass={desktopInputClass}
+          aria-label="End date"
           value={block.endDate}
-          onChange={(event) => onBlockChange(block.id, { endDate: event.target.value })}
+          onChange={(endDate) => onBlockChange(block.id, { endDate })}
         />
       </div>
       <div role="cell" className="pt-2.5 text-center font-mono text-sm font-medium tabular-nums text-ink">
@@ -348,22 +349,20 @@ const SortableCard = ({
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
           <label htmlFor={`${fieldId}-start`} className={cardLabelClass}>From</label>
-          <input
+          <DatePicker
             id={`${fieldId}-start`}
-            type="date"
-            className={tableInputClass}
+            fieldClass={tableInputClass}
             value={block.startDate}
-            onChange={(event) => onBlockChange(block.id, { startDate: event.target.value })}
+            onChange={(startDate) => onBlockChange(block.id, { startDate })}
           />
         </div>
         <div className="space-y-1.5">
           <label htmlFor={`${fieldId}-end`} className={cardLabelClass}>To</label>
-          <input
+          <DatePicker
             id={`${fieldId}-end`}
-            type="date"
-            className={tableInputClass}
+            fieldClass={tableInputClass}
             value={block.endDate}
-            onChange={(event) => onBlockChange(block.id, { endDate: event.target.value })}
+            onChange={(endDate) => onBlockChange(block.id, { endDate })}
           />
         </div>
       </div>

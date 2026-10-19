@@ -1,4 +1,5 @@
-import { FALLBACK_CURRENCY, formatISODate, monthKey, parseMonthKey } from '@sainsw/invoice-pdf';
+import { formatISODate, monthKey, parseMonthKey } from '@sainsw/invoice-pdf';
+import { DEFAULT_CURRENCY_SYMBOL } from '@/lib/currency';
 import type { Expense, ExtraReference, InvoiceData, Settings, WorkBlock } from '@sainsw/invoice-pdf';
 
 export const SETTINGS_KEY = 'simpleInvoice.settings';
@@ -49,7 +50,7 @@ export const defaultSettings = (): Settings => ({
   // Unused: the app reopens on the last client instead. Kept because Settings requires it.
   defaultClientName: '',
   defaultDailyRate: 150,
-  currencySymbol: FALLBACK_CURRENCY.symbol,
+  currencySymbol: DEFAULT_CURRENCY_SYMBOL,
   defaultPaymentTerms: 14,
   bankDetails: '',
   headerColor: '#ffffff',

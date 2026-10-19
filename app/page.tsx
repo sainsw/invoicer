@@ -5,6 +5,8 @@ import type { ReactNode } from 'react';
 import { ClientChips } from '@/components/ClientChips';
 import { ExpensesTable } from '@/components/ExpensesTable';
 import { SettingsDrawer } from '@/components/SettingsDrawer';
+import { DatePicker } from '@/components/DatePicker';
+import { detectDefaultCurrencySymbol } from '@/lib/currency';
 import { MonthPicker } from '@/components/MonthPicker';
 import { RollingNumber } from '@/components/RollingNumber';
 import { WorkBlocksTable } from '@/components/WorkBlocksTable';
@@ -36,7 +38,6 @@ import {
 import {
   countWeekdaysInclusive,
   isValidDateRange,
-  detectCurrencySymbol,
   resolveFilename,
   generateInvoicePdf,
   parseISODate,
@@ -238,7 +239,7 @@ export default function HomePage() {
     if (!settingsReady || hasStoredSettings) {
       return;
     }
-    const symbol = detectCurrencySymbol();
+    const symbol = detectDefaultCurrencySymbol();
     if (!symbol || symbol === settings.currencySymbol) {
       return;
     }
@@ -320,7 +321,7 @@ export default function HomePage() {
 
   const localeDefaultSettings = () => {
     const base = defaultSettings();
-    const symbol = detectCurrencySymbol();
+    const symbol = detectDefaultCurrencySymbol();
     return {
       ...base,
       currencySymbol: symbol || base.currencySymbol,
@@ -1012,13 +1013,11 @@ function MetadataForm({
           />
         </Field>
         <Field id="issueDate" label="Invoice date">
-          <input
-            type="date"
+          <DatePicker
             id="issueDate"
-            className={showDateError ? fieldErrorClass : fieldClass}
+            fieldClass={showDateError ? fieldErrorClass : fieldClass}
             value={invoice.issueDate}
-            onChange={(event) => onChange({ issueDate: event.target.value })}
-            aria-invalid={showDateError}
+            onChange={(issueDate) => onChange({ issueDate })}
             aria-describedby={showDateError ? 'issueDateError' : undefined}
           />
         </Field>
