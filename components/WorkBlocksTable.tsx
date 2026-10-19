@@ -60,7 +60,8 @@ type RowExtras = {
 
 const tableInputClass =
   'w-full rounded-md border border-edge bg-field px-3.5 py-2.5 text-[15px] text-ink transition hover:border-ink-2 focus:border-accent focus:outline-hidden focus:ring-2 focus:ring-accent/30 placeholder:text-ink-3';
-// Desktop cells are narrow, so trim the horizontal padding (a date like "29 Oct 2026" with its icon needs ~130px at px-2.5).
+// Desktop cells are narrow, so trim the horizontal padding. Date cells are 148px: the widest date, "28 Sept 2026",
+// is 93px of text, plus icon, gap, padding and border (55px) leaves ~10px for fonts that render wider (macOS).
 const desktopInputClass = tableInputClass.replace('px-3.5', 'px-2.5');
 const descriptionInputClass = `${desktopInputClass} min-w-0`;
 const rateInputClass = `${desktopInputClass} text-right`;
@@ -71,19 +72,19 @@ const dragHandleClass =
   'inline-flex h-8 w-8 cursor-grab touch-none items-center justify-center rounded-sm text-ink-3 transition hover:bg-well hover:text-ink active:cursor-grabbing focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
 
 // Desktop grid: description, start, end, days, daily rate, block total, line total, options/drag handle.
-// Columns total 728px (description min 116 + dates 2 × 132) + 7 gaps of 6px = 770px, plus row padding (16px left so
-// the first field isn't cramped against the border, 8px right beside the handle) → 794px rows, 796px with the
+// Columns total 760px (description min 116 + dates 2 × 148) + 7 gaps of 6px = 802px, plus row padding (16px left so
+// the first field isn't cramped against the border, 8px right beside the handle) → 826px rows, 828px with the
 // table border. The table only shows once there's room for that (see TABLE_MIN_CONTAINER below);
 // narrower containers get the card layout, so the table never needs to scroll sideways.
 const desktopGridClass =
-  'grid grid-cols-[minmax(116px,1fr)_132px_132px_40px_88px_96px_92px_32px] items-start gap-x-1.5';
-const desktopMinWidthClass = 'min-w-[794px]';
+  'grid grid-cols-[minmax(116px,1fr)_148px_148px_40px_88px_96px_92px_32px] items-start gap-x-1.5';
+const desktopMinWidthClass = 'min-w-[826px]';
 // Keep in sync with ExpensesTable so both lists switch layout together.
 // The table hangs out into the section margins (see tableBleedClass), so it needs 34px less room
-// than its own 796px width.
-const TABLE_MIN_CONTAINER = 762;
-const tableViewClass = 'hidden @min-[762px]:block';
-const cardViewClass = 'flex flex-col gap-4 @min-[762px]:hidden';
+// than its own 828px width.
+const TABLE_MIN_CONTAINER = 794;
+const tableViewClass = 'hidden @min-[794px]:block';
+const cardViewClass = 'flex flex-col gap-4 @min-[794px]:hidden';
 // Pull the table 17px out on both sides (border + 16px row padding on the left) so the first field lines
 // up with the fields above and the table sits centred on the sheet; the padding inside stays the same.
 const tableBleedClass = '-mx-[17px]';

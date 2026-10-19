@@ -55,22 +55,22 @@ const tableInputClass =
 const dragHandleClass =
   'inline-flex h-8 w-8 cursor-grab touch-none items-center justify-center rounded-sm text-ink-3 transition hover:bg-well hover:text-ink active:cursor-grabbing focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
 
-// Desktop cells are narrow, so trim the horizontal padding (a date like "29 Oct 2026" with its icon needs ~130px at px-2.5).
+// Desktop cells are narrow, so trim the horizontal padding. Dates get 148px, as in WorkBlocksTable.
 const desktopInputClass = tableInputClass.replace('px-3.5', 'px-2.5');
 
-// Desktop grid: date, notes, value, options/drag handle. 400px of columns + 3 gaps of 6px + px-2 → 434px.
+// Desktop grid: date, notes, value, options/drag handle. 416px of columns + 3 gaps of 6px + 24px row padding → 458px.
 const cardLabelClass = 'block text-sm font-medium text-ink';
 
 const desktopGridClass =
-  'grid grid-cols-[132px_minmax(132px,1fr)_104px_32px] items-start gap-x-1.5';
+  'grid grid-cols-[148px_minmax(132px,1fr)_104px_32px] items-start gap-x-1.5';
 // Same 16px-left / 8px-right row padding as WorkBlocksTable.
-const desktopMinWidthClass = 'min-w-[442px]';
+const desktopMinWidthClass = 'min-w-[458px]';
 // Same breakpoint as WorkBlocksTable so both lists switch layout together.
 // The table hangs out into the section margins (see tableBleedClass), so it needs 34px less room
-// than its own 796px width.
-const TABLE_MIN_CONTAINER = 762;
-const tableViewClass = 'hidden @min-[762px]:block';
-const cardViewClass = 'flex flex-col gap-4 @min-[762px]:hidden';
+// than its own 828px width.
+const TABLE_MIN_CONTAINER = 794;
+const tableViewClass = 'hidden @min-[794px]:block';
+const cardViewClass = 'flex flex-col gap-4 @min-[794px]:hidden';
 // Pull the table 17px out on both sides (border + 16px row padding on the left) so the first field lines
 // up with the fields above and the table sits centred on the sheet; the padding inside stays the same.
 const tableBleedClass = '-mx-[17px]';

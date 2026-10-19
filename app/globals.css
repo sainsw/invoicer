@@ -236,8 +236,16 @@ body::before {
 }
 
 @layer base {
+  /* No spinner: it steps money by 1, and in narrow table cells it sits on top of the digits.
+     Arrow keys still step the value. */
   input[type='number'] {
     font-variant-numeric: tabular-nums;
+    appearance: textfield;
+  }
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    appearance: none;
+    margin: 0;
   }
 }
 
